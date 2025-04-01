@@ -2,7 +2,7 @@
 
 Modern social media application.
 
-Last updated: $(date)
+Last updated: June 21, 2024
 
 This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
