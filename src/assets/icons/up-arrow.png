@@ -1,0 +1,1139 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  FlatList,
+  ScrollView,
+  Dimensions,
+  SafeAreaView,
+  StatusBar,
+} from 'react-native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
+
+// Loading icons
+const backIcon = require('../assets/icons/back.png');
+const moreIcon = require('../assets/icons/more.png');
+const sendIcon = require('../assets/icons/send.png');
+
+type DynamicGroupScreenRouteProp = RouteProp<RootStackParamList, 'GroupScreen'>;
+
+// Sample data for the debate
+const SAMPLE_DEBATE_DATA = {
+  id: '1',
+  title: 'GOAT of Cricket: Virat vs Dhoni?',
+  groupName: 'Cricket Lovers',
+  participants: [
+    {
+      id: 'virat',
+      name: 'Virat Kohli',
+      image: 'https://tinyurl.com/45erzeb4',
+      votes: 54,
+    },
+    {
+      id: 'dhoni',
+      name: 'MS Dhoni',
+      image: 'https://tinyurl.com/5n6v33te',
+      votes: 44,
+    },
+  ],
+  timeRemaining: '01:02:45',
+  estimatedEarning: '$ 247.09',
+  liveUsers: '12k',
+  isTrending: true,
+  leadingDiscussion: {
+    name: 'Virat Fan',
+    upvotes: '2.4k',
+    downvotes: '234',
+  },
+  totalParticipants: '256k',
+  totalComments: '1.2M',
+};
+
+// Sample comments data
+const SAMPLE_COMMENTS = [
+  {
+    id: '1',
+    user: {
+      id: 'user1',
+      name: 'Virat Fan',
+      avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
+      role: 'Virat Fan',
+    },
+    timeAgo: '2h ago',
+    content: 'Kohli\'s batting average and consistency is unmatched. 71 centuries speak for themselves! 🐐',
+    upvotes: '2.4k',
+    downvotes: '234',
+    replies: [],
+  },
+  {
+    id: '2',
+    user: {
+      id: 'user2',
+      name: 'Dhoni Believer',
+      avatar: 'https://randomuser.me/api/portraits/men/41.jpg',
+      role: 'Dhoni Believer',
+    },
+    timeAgo: '1h ago',
+    content: '3 ICC trophies as captain! Dhoni\'s leadership and finishing abilities make him the ultimate GOAT 🏆',
+    upvotes: '1.8k',
+    downvotes: '156',
+    replies: [],
+  },
+  {
+    id: '3',
+    user: {
+      id: 'user3',
+      name: 'Cricket Expert',
+      avatar: 'https://randomuser.me/api/portraits/men/22.jpg',
+      role: 'Expert',
+    },
+    timeAgo: '45m ago',
+    content: 'Looking at career stats alone, Kohli dominates batting records, but Dhoni\'s impact as captain & wicketkeeper cannot be measured just by numbers.',
+    upvotes: '3.1k',
+    downvotes: '89',
+    replies: [],
+  },
+  {
+    id: '4',
+    user: {
+      id: 'user4',
+      name: 'Team India Fan',
+      avatar: 'https://randomuser.me/api/portraits/women/26.jpg',
+      role: 'Neutral',
+    },
+    timeAgo: '30m ago',
+    content: 'Both are legends in their own right. Kohli for his batting, Dhoni for his leadership. India is lucky to have had both! 🇮🇳',
+    upvotes: '2.2k',
+    downvotes: '45',
+    replies: [],
+  },
+];
+
+// List of users in the live debate (shown as avatars)
+const LIVE_USERS = [
+  { id: '1', avatar: 'https://randomuser.me/api/portraits/men/32.jpg' },
+  { id: '2', avatar: 'https://randomuser.me/api/portraits/women/44.jpg' },
+  { id: '3', avatar: 'https://randomuser.me/api/portraits/men/46.jpg' },
+  { id: '4', avatar: 'https://randomuser.me/api/portraits/women/45.jpg' },
+];
+
+// Add these helper functions before the component declaration
+const formatNumber = (num: string | number) => {
+  const n = typeof num === 'string' ? parseInt(num, 10) : num;
+  if (n >= 1000000) {
+    return (n / 1000000).toFixed(1) + 'M';
+  }
+  if (n >= 1000) {
+    return (n / 1000).toFixed(1) + 'K';
+  }
+  return n.toString();
+};
+
+const DynamicGroupScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const route = useRoute<DynamicGroupScreenRouteProp>();
+  
+  // State
+  const [debateData, setDebateData] = useState(SAMPLE_DEBATE_DATA);
+  const [comments, setComments] = useState(SAMPLE_COMMENTS);
+  const [comment, setComment] = useState('');
+  const [timeLeft, setTimeLeft] = useState(debateData.timeRemaining);
+  const [showOptions, setShowOptions] = useState(false);
+  const [userVote, setUserVote] = useState<string | null>(null);
+  const [liveUsers, setLiveUsers] = useState(LIVE_USERS);
+  
+  // Refs
+  const flatListRef = useRef<FlatList>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const commentInputRef = useRef<TextInput>(null);
+  
+  // Timer countdown effect
+  useEffect(() => {
+    const timer = setInterval(() => {
+      // This is a simple countdown simulation
+      setTimeLeft(prev => {
+        const [hours, minutes, seconds] = prev.split(':').map(Number);
+        let totalSeconds = hours * 3600 + minutes * 60 + seconds;
+        
+        if (totalSeconds <= 0) {
+          clearInterval(timer);
+          return '00:00:00';
+        }
+        
+        totalSeconds -= 1;
+        const h = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+        const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+        const s = (totalSeconds % 60).toString().padStart(2, '0');
+        
+        return `${h}:${m}:${s}`;
+      });
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
+
+  // Handle back button press
+  const handleBackPress = () => {
+    navigation.goBack();
+  };
+
+  // Handle options menu press
+  const handleOptionsPress = () => {
+    setShowOptions(!showOptions);
+  };
+
+  // Handle voting for a participant
+  const handleVote = (participantId: string) => {
+    if (userVote === participantId) {
+      return; // User already voted for this participant
+    }
+
+    setUserVote(participantId);
+    
+    // Update vote count (a simple implementation for demo)
+    setDebateData(prev => {
+      const updatedParticipants = prev.participants.map(p => {
+        if (p.id === participantId) {
+          return { ...p, votes: p.votes + 1 };
+        }
+        return p;
+      });
+      
+      return { ...prev, participants: updatedParticipants };
+    });
+  };
+
+  // Handle join stream button press
+  const handleJoinStream = () => {
+    // Navigate to a streaming screen or open streaming functionality
+    console.log("Join stream pressed");
+    // You can implement navigation to a streaming screen here
+  };
+
+  // Handle comment submission
+  const handleCommentSubmit = () => {
+    if (!comment.trim()) return;
+    
+    // Create a new comment object
+    const newComment = {
+      id: `comment-${Date.now()}`,
+      user: {
+        id: 'current-user', // In a real app, this would be the current user's ID
+        name: 'You', // In a real app, this would be the current user's name
+        avatar: 'https://randomuser.me/api/portraits/men/32.jpg', // In a real app, this would be the current user's avatar
+        role: 'Fan',
+      },
+      timeAgo: 'Just now',
+      content: comment.trim(),
+      upvotes: '0',
+      downvotes: '0',
+      replies: [],
+    };
+    
+    // Add the new comment to the comments list
+    setComments([newComment, ...comments]);
+    
+    // Clear the comment input
+    setComment('');
+  };
+
+  // Header component
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <TouchableOpacity 
+        style={styles.backButton} 
+        onPress={handleBackPress}
+        activeOpacity={0.7}
+      >
+        <Image source={backIcon} style={styles.backIcon} />
+      </TouchableOpacity>
+      
+      <View style={styles.headerTitleContainer}>
+        <Text style={styles.headerTitle}>{debateData.groupName}</Text>
+      </View>
+      
+      <TouchableOpacity 
+        style={styles.optionsButton} 
+        onPress={handleOptionsPress}
+        activeOpacity={0.7}
+      >
+        <Image source={moreIcon} style={styles.optionsIcon} />
+      </TouchableOpacity>
+      
+      {showOptions && (
+        <View style={styles.optionsMenu}>
+          <TouchableOpacity style={styles.optionItem}>
+            <Text style={styles.optionText}>Report Group</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.optionItem}>
+            <Text style={styles.optionText}>Mute Notifications</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.optionItem}>
+            <Text style={styles.optionText}>Leave Group</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
+
+  // Debate title section
+  const renderDebateTitle = () => (
+    <View style={styles.debateTitleContainer}>
+      <Text style={styles.debateTitle}>{debateData.title}</Text>
+    </View>
+  );
+
+  // Debate poll section with VS card
+  const renderDebatePoll = () => (
+    <View style={styles.debatePollContainer}>
+      <View style={styles.vsCardContainer}>
+        {/* Participants images and names */}
+        <View style={styles.vsCardContent}>
+          {debateData.participants.map((participant, index) => (
+            <View 
+              key={participant.id} 
+              style={[
+                styles.participantContainer,
+                index === 0 ? styles.leftParticipant : styles.rightParticipant
+              ]}
+            >
+              <Image 
+                source={{ uri: participant.image }} 
+                style={styles.participantImage} 
+                resizeMode="cover"
+              />
+              <Text style={styles.participantName}>
+                {participant.name.toUpperCase()}
+              </Text>
+            </View>
+          ))}
+          
+          {/* VS badge in the middle */}
+          <View style={styles.vsBadge}>
+            <Text style={styles.vsText}>VS</Text>
+          </View>
+        </View>
+      </View>
+      
+      {/* Voting buttons */}
+      <View style={styles.votingButtonsContainer}>
+        {debateData.participants.map(participant => (
+          <TouchableOpacity
+            key={participant.id}
+            style={[
+              styles.votingButton,
+              userVote === participant.id && styles.votedButton,
+              participant.id === 'virat' ? styles.participant1Button : styles.participant2Button
+            ]}
+            onPress={() => handleVote(participant.id)}
+            activeOpacity={0.8}
+          >
+            <Text style={[
+              styles.votingButtonText,
+              userVote === participant.id && styles.votedButtonText
+            ]}>
+              {participant.name}
+            </Text>
+            <Text style={[
+              styles.votingPercentage,
+              userVote === participant.id && styles.votedPercentage
+            ]}>
+              {participant.votes}%
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      
+      {/* Timer and earnings */}
+      <View style={styles.timerContainer}>
+        <View style={styles.timerSection}>
+          <View style={styles.timerIconContainer}>
+            <Text style={styles.timerIcon}>⏱</Text>
+          </View>
+          <View style={styles.timerTextContainer}>
+            <Text style={styles.timerLabel}>Time left</Text>
+            <Text style={styles.timerValue}>{timeLeft}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.earningsSection}>
+          <View style={styles.earningsIconContainer}>
+            <Text style={styles.earningsIcon}>💰</Text>
+          </View>
+          <View style={styles.earningsTextContainer}>
+            <Text style={styles.earningsLabel}>Est. earning</Text>
+            <Text style={styles.earningsValue}>{debateData.estimatedEarning}</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+
+  // Leader box section
+  const renderLeaderBox = () => (
+    <View style={styles.leaderBoxContainer}>
+      <View style={styles.leaderIdentityContainer}>
+        <View style={styles.leaderAvatar}>
+          <Text style={styles.leaderAvatarText}>
+            {debateData.leadingDiscussion.name.charAt(0)}
+          </Text>
+        </View>
+        <Text style={styles.leaderName}>{debateData.leadingDiscussion.name}</Text>
+      </View>
+      <View style={styles.leaderStatsContainer}>
+        <Text style={styles.leaderLabel}>Leading the discussion</Text>
+        <View style={styles.leaderVotesContainer}>
+          <Text style={styles.upvotesText}>
+            ⬆️ {debateData.leadingDiscussion.upvotes}
+          </Text>
+          <Text style={styles.downvotesText}>
+            ⬇️ {debateData.leadingDiscussion.downvotes}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  // Live debate section
+  const renderLiveDebate = () => (
+    <View style={styles.liveDebateContainer}>
+      <View style={styles.liveHeaderContainer}>
+        <View style={styles.liveIndicatorContainer}>
+          <View style={styles.liveDot} />
+          <Text style={styles.liveText}>LIVE</Text>
+          <Text style={styles.liveUsersCount}>{debateData.liveUsers} users</Text>
+        </View>
+
+        {debateData.isTrending && (
+          <View style={styles.trendingContainer}>
+            <Text style={styles.trendingIcon}>🔥</Text>
+            <Text style={styles.trendingText}>Trending</Text>
+          </View>
+        )}
+      </View>
+
+      {renderLeaderBox()}
+
+      <View style={styles.debateInfoContainer}>
+        <View style={styles.debateInfoHeader}>
+          <Text style={styles.debateInfoTitle}>GOAT Debate</Text>
+        </View>
+        <Text style={styles.debateInfoDescription}>
+          Live cricket debate: Stats, achievements, and leadership comparison
+        </Text>
+        
+        <View style={styles.debateParticipantsContainer}>
+          {liveUsers.map((user, index) => (
+            <Image 
+              key={user.id}
+              source={{ uri: user.avatar }}
+              style={[
+                styles.debateParticipantAvatar,
+                { marginLeft: index > 0 ? -12 : 0 }
+              ]}
+            />
+          ))}
+          <Text style={styles.debateParticipantsCount}>+9.9k</Text>
+        </View>
+        
+        <TouchableOpacity 
+          style={styles.joinStreamButton}
+          onPress={handleJoinStream}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.joinStreamButtonText}>Join Stream</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  // Render a single comment
+  const renderCommentItem = (comment: typeof SAMPLE_COMMENTS[0]) => (
+    <View key={comment.id} style={styles.commentContainer}>
+      {/* Comment header with user info */}
+      <View style={styles.commentHeader}>
+        <View style={styles.commentUserInfo}>
+          <Image 
+            source={{ uri: comment.user.avatar }} 
+            style={styles.commentUserAvatar} 
+          />
+          <View style={styles.commentUserDetails}>
+            <View style={styles.commentUserNameContainer}>
+              <Text style={styles.commentUserName}>{comment.user.name}</Text>
+              <View style={styles.commentUserRole}>
+                <Text style={styles.commentUserRoleText}>{comment.user.role}</Text>
+              </View>
+            </View>
+            <Text style={styles.commentTimeAgo}>{comment.timeAgo}</Text>
+          </View>
+        </View>
+      </View>
+      
+      {/* Comment content */}
+      <Text style={styles.commentContent}>{comment.content}</Text>
+      
+      {/* Comment actions */}
+      <View style={styles.commentActions}>
+        <TouchableOpacity style={styles.commentAction}>
+          <Text style={styles.commentActionUpvote}>⬆️ {comment.upvotes}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.commentAction}>
+          <Text style={styles.commentActionDownvote}>⬇️ {comment.downvotes}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.commentAction}>
+          <Text style={styles.commentActionReply}>💬 Reply</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  // Render all comments
+  const renderComments = () => (
+    <View style={styles.commentsContainer}>
+      {comments.map(comment => renderCommentItem(comment))}
+    </View>
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      
+      {renderHeader()}
+      
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {renderDebateTitle()}
+        {renderDebatePoll()}
+        {renderLiveDebate()}
+        
+        {/* Heated Debate Header */}
+        <View style={styles.debateCommentsHeaderContainer}>
+          <Text style={styles.debateCommentsTitle}>
+            Heated Debate: Virat vs Dhoni
+          </Text>
+          <View style={styles.debateCommentsStats}>
+            <Text style={styles.debateCommentsStatsText}>
+              {debateData.totalParticipants} Participants
+            </Text>
+            <Text style={styles.debateCommentsStatsText}>
+              {debateData.totalComments} Comments
+            </Text>
+          </View>
+        </View>
+        
+        {/* Comments section */}
+        {renderComments()}
+        
+        {/* Add some spacing at the bottom */}
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
+      
+      {/* Comment input field */}
+      <View style={styles.commentInputContainer}>
+        <TextInput
+          ref={commentInputRef}
+          style={styles.commentInput}
+          placeholder="Add to the discussion..."
+          placeholderTextColor="#888888"
+          value={comment}
+          onChangeText={setComment}
+          multiline
+        />
+        
+        <View style={styles.commentInputActions}>
+          <TouchableOpacity 
+            style={[
+              styles.commentSubmitButton,
+              !comment.trim() && styles.commentSubmitButtonDisabled
+            ]}
+            onPress={handleCommentSubmit}
+            disabled={!comment.trim()}
+          >
+            <Image source={sendIcon} style={styles.commentSubmitIcon} />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.liveCommentButton}
+            onPress={handleJoinStream}
+          >
+            <Text style={styles.liveCommentButtonText}>LIVE</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+    backgroundColor: '#FFFFFF',
+    position: 'relative',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#333333',
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333333',
+  },
+  optionsButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  optionsIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#333333',
+  },
+  optionsMenu: {
+    position: 'absolute',
+    top: 60,
+    right: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    elevation: 5,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    zIndex: 10,
+    width: 180,
+    paddingVertical: 8,
+  },
+  optionItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  optionText: {
+    fontSize: 16,
+    color: '#333333',
+  },
+  debateTitleContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  debateTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#111111',
+  },
+  debatePollContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  vsCardContainer: {
+    width: '100%',
+    height: 240,
+    backgroundColor: '#000',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  vsCardContent: {
+    flexDirection: 'row',
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  participantContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  leftParticipant: {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  rightParticipant: {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  participantImage: {
+    width: '100%',
+    height: '100%',
+    opacity: 0.8,
+  },
+  participantName: {
+    position: 'absolute',
+    bottom: 16,
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  vsBadge: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -24 }, { translateY: -24 }],
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    elevation: 5,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 4,
+  },
+  vsText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  votingButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  votingButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+  participant1Button: {
+    backgroundColor: '#FF5252',
+  },
+  participant2Button: {
+    backgroundColor: '#2979FF',
+  },
+  votedButton: {
+    borderWidth: 2,
+    borderColor: '#FFD700',
+  },
+  votingButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  votedButtonText: {
+    fontWeight: '800',
+  },
+  votingPercentage: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  votedPercentage: {
+    fontWeight: '700',
+  },
+  timerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+  },
+  timerSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  timerIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  timerIcon: {
+    fontSize: 20,
+  },
+  timerTextContainer: {
+    justifyContent: 'center',
+  },
+  timerLabel: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 2,
+  },
+  timerValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  earningsSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  earningsIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F0F0F0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  earningsIcon: {
+    fontSize: 20,
+  },
+  earningsTextContainer: {
+    justifyContent: 'center',
+  },
+  earningsLabel: {
+    fontSize: 14,
+    color: '#666666',
+    marginBottom: 2,
+  },
+  earningsValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  liveDebateContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  liveHeaderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  liveIndicatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  liveDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FF3B30',
+    marginRight: 8,
+  },
+  liveText: {
+    color: '#FF3B30',
+    fontWeight: 'bold',
+    marginRight: 8,
+    fontSize: 14,
+  },
+  liveUsersCount: {
+    color: '#555555',
+    fontSize: 14,
+  },
+  trendingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFEBE9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  trendingIcon: {
+    marginRight: 4,
+    fontSize: 14,
+  },
+  trendingText: {
+    color: '#FF3B30',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  leaderBoxContainer: {
+    backgroundColor: '#FF5252',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  leaderIdentityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  leaderAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  leaderAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  leaderName: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  leaderStatsContainer: {
+    flex: 1,
+  },
+  leaderLabel: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  leaderVotesContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  upvotesText: {
+    color: '#FFFFFF',
+    marginRight: 8,
+    fontSize: 14,
+  },
+  downvotesText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+  },
+  debateInfoContainer: {
+    backgroundColor: '#F0F7FF',
+    borderRadius: 12,
+    padding: 16,
+  },
+  debateInfoHeader: {
+    marginBottom: 8,
+  },
+  debateInfoTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333333',
+  },
+  debateInfoDescription: {
+    fontSize: 14,
+    color: '#555555',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  debateParticipantsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  debateParticipantAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  debateParticipantsCount: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#555555',
+  },
+  joinStreamButton: {
+    backgroundColor: '#2979FF',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  joinStreamButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  debateCommentsHeaderContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 8,
+    borderTopColor: '#F0F0F0',
+  },
+  debateCommentsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginBottom: 8,
+  },
+  debateCommentsStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  debateCommentsStatsText: {
+    fontSize: 14,
+    color: '#666666',
+  },
+  commentsContainer: {
+    paddingHorizontal: 20,
+  },
+  commentContainer: {
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+    paddingBottom: 16,
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  commentUserInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  commentUserAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  commentUserDetails: {
+    justifyContent: 'center',
+  },
+  commentUserNameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  commentUserName: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#333333',
+    marginRight: 8,
+  },
+  commentUserRole: {
+    backgroundColor: '#F0F0F0',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  commentUserRoleText: {
+    fontSize: 11,
+    color: '#666666',
+  },
+  commentTimeAgo: {
+    fontSize: 12,
+    color: '#888888',
+  },
+  commentContent: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#333333',
+    marginBottom: 12,
+  },
+  commentActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  commentAction: {
+    marginRight: 16,
+  },
+  commentActionUpvote: {
+    fontSize: 14,
+    color: '#333333',
+  },
+  commentActionDownvote: {
+    fontSize: 14,
+    color: '#333333',
+  },
+  commentActionReply: {
+    fontSize: 14,
+    color: '#333333',
+  },
+  bottomSpacer: {
+    height: 80,
+  },
+  commentInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#EEEEEE',
+    backgroundColor: '#FFFFFF',
+  },
+  commentInput: {
+    flex: 1,
+    height: 40,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    fontSize: 15,
+    color: '#333333',
+    maxHeight: 80,
+  },
+  commentInputActions: {
+    flexDirection: 'row',
+    marginLeft: 12,
+  },
+  commentSubmitButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#2979FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  commentSubmitButtonDisabled: {
+    backgroundColor: '#CCCCCC',
+  },
+  commentSubmitIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#FFFFFF',
+  },
+  liveCommentButton: {
+    height: 40,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  liveCommentButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+});
+
+export default DynamicGroupScreen; 
