@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -134,6 +134,18 @@ const BlogDetailsScreen = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [showCommentInput, setShowCommentInput] = useState(false);
+  const [remainingTime, setRemainingTime] = useState(10); // 10 seconds timer
+
+  // Timer effect for countdown
+  useEffect(() => {
+    let timer;
+    if (remainingTime > 0) {
+      timer = setTimeout(() => {
+        setRemainingTime(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [remainingTime]);
 
   const handleLike = () => {
     setIsLiked(!isLiked);
@@ -172,93 +184,178 @@ const BlogDetailsScreen = () => {
 
   const renderHeader = () => (
     <View style={styles.header}>
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => navigation.goBack()}
-      >
-        <Image source={backIcon} style={styles.backIcon} />
-      </TouchableOpacity>
-      <View style={styles.pointsContainer}>
-        <Image source={pointsIcon} style={styles.pointsIcon} />
-        <Text style={styles.pointsText}>{blog.points.toLocaleString()}</Text>
+      <View style={styles.headerLeft}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Image source={backIcon} style={styles.backIcon} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Article</Text>
+      </View>
+      <View style={styles.headerActions}>
+        <TouchableOpacity style={styles.headerIconButton} onPress={handleBookmark}>
+          <Image source={bookmarkIcon} style={styles.headerActionIcon} />
+        </TouchableOpacity>
+        <View style={styles.headerPointsBadge}>
+          <Image source={pointsIcon} style={styles.headerBadgeIcon} />
+          <Text style={styles.headerBadgeText}>{blog.points.toLocaleString()}</Text>
+        </View>
       </View>
     </View>
   );
 
-  const renderContent = () => (
-    <View style={styles.contentContainer}>
-      <Text style={styles.title}>{blog.title}</Text>
-      <Image source={{ uri: blog.image }} style={styles.mainImage} />
-      
-      <View style={styles.blogActions}>
-        <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
-          <Image 
-            source={isLiked ? heartFilledIcon : heartIcon} 
-            style={[styles.actionIcon, isLiked && { tintColor: '#F44336' }]} 
-          />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={handleComment}>
-          <Image source={commentIcon} style={styles.actionIcon} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-          <Image source={shareIcon} style={styles.actionIcon} />
-        </TouchableOpacity>
-        <View style={styles.spacer} />
-        <TouchableOpacity style={styles.actionButton} onPress={handleBookmark}>
-          <Image source={bookmarkIcon} style={styles.actionIcon} />
-        </TouchableOpacity>
-      </View>
-
-      {Array.isArray(blog.content) && blog.content.map((item, index) => {
-        if (item.type === 'paragraph' && item.text) {
-          return (
-            <Text key={index} style={styles.paragraph}>
-              {item.text}
-            </Text>
-          );
-        } else if (item.type === 'video') {
-          return (
-            <TouchableOpacity key={index} style={styles.videoContainer}>
-              <View style={styles.videoIconContainer}>
+  const renderVideoCard = (item, index) => {
+    const formattedTime = `00:${remainingTime < 10 ? '0' : ''}${remainingTime}`;
+    return (
+      <TouchableOpacity 
+        key={index} 
+        style={styles.videoContainer}
+        onPress={handleWatchVideo}
+        activeOpacity={0.9}
+      >
+        <View style={styles.videoContentWrapper}>
+          <View style={styles.videoLeftContent}>
+            <Text style={styles.videoTitle}>{item.title || 'Click Here to Watch Movie'}</Text>
+            <View style={styles.videoMetaRow}>
+              <View style={styles.timerContainer}>
+                <Text style={styles.timerText}>{formattedTime}</Text>
+              </View>
+              <Text style={styles.videoSubtitle}>Limited time offer</Text>
+            </View>
+          </View>
+          
+          <View style={styles.videoIconsContainer}>
+            <View style={styles.timerCircle}>
+              <Text style={styles.timerCircleText}>{remainingTime}</Text>
+            </View>
+            <View style={styles.videoActionContainer}>
+              <TouchableOpacity 
+                style={styles.downloadButton}
+                onPress={handleDownload}
+              >
                 <Image 
                   source={downloadIcon} 
                   style={styles.downloadIcon} 
                 />
-              </View>
-              <Text style={styles.videoTitle}>{item.title || 'Watch Video'}</Text>
-              <Text style={styles.videoDuration}>{item.duration || ''}</Text>
-              <TouchableOpacity 
-                style={styles.watchButton}
-                onPress={handleWatchVideo}
-              >
-                <Text style={styles.watchButtonText}>Watch Here</Text>
               </TouchableOpacity>
-            </TouchableOpacity>
-          );
-        }
-        return null;
-      })}
+            </View>
+          </View>
+        </View>
+        
+        <TouchableOpacity 
+          style={styles.watchButton}
+          onPress={handleWatchVideo}
+        >
+          <Text style={styles.watchButtonText}>Watch Now</Text>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    );
+  };
 
-      {showCommentInput && (
-        <View style={styles.commentInputContainer}>
-          <TextInput
-            style={styles.commentInput}
-            placeholder="Add a comment..."
-            value={commentText}
-            onChangeText={setCommentText}
-            multiline
-          />
-          <TouchableOpacity 
-            style={styles.postCommentButton}
-            onPress={() => {
-              setCommentText('');
-              setShowCommentInput(false);
-            }}
-          >
-            <Text style={styles.postCommentText}>Post</Text>
+  const renderContent = () => (
+    <View style={styles.contentContainer}>
+      <Image source={{ uri: blog.image }} style={styles.heroImage} />
+      <View style={styles.contentWrapper}>
+        <View style={styles.titleSection}>
+          <Text style={styles.title}>{blog.title}</Text>
+          <View style={styles.metaInfoRow}>
+            <Text style={styles.readTime}>{blog.readTime}</Text>
+            <Text style={styles.metaDivider}>•</Text>
+            <Text style={styles.dateText}>{blog.date}</Text>
+          </View>
+        </View>
+        
+        <View style={styles.actionRow}>
+          <View style={styles.authorBrief}>
+            <Image source={{ uri: blog.authorAvatar }} style={styles.authorImageSmall} />
+            <TouchableOpacity style={styles.miniFollowButton}>
+              <Text style={styles.miniFollowText}>Follow</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.actionButtons}>
+            <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
+              <View style={[styles.actionIconContainer, isLiked && styles.actionIconContainerActive]}>
+                <Image 
+                  source={isLiked ? heartFilledIcon : heartIcon} 
+                  style={[styles.actionIcon, isLiked && { tintColor: '#fff' }]} 
+                />
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={handleComment}>
+              <View style={styles.actionIconContainer}>
+                <Image source={commentIcon} style={styles.actionIcon} />
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
+              <View style={styles.actionIconContainer}>
+                <Image source={shareIcon} style={styles.actionIcon} />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.contentProse}>
+          {Array.isArray(blog.content) && blog.content.map((item, index) => {
+            if (item.type === 'paragraph' && item.text) {
+              // Add a styled first paragraph
+              if (index === 0) {
+                return (
+                  <Text key={index} style={styles.firstParagraph}>
+                    {item.text}
+                  </Text>
+                );
+              }
+              return (
+                <Text key={index} style={styles.paragraph}>
+                  {item.text}
+                </Text>
+              );
+            } else if (item.type === 'video') {
+              return renderVideoCard(item, index);
+            }
+            return null;
+          })}
+        </View>
+
+        <View style={styles.authorFooter}>
+          <View style={styles.authorContainer}>
+            <Image source={{ uri: blog.authorAvatar }} style={styles.authorImage} />
+            <View style={styles.authorInfo}>
+              <Text style={styles.authorName}>{blog.author}</Text>
+              <Text style={styles.authorBio}>Content Creator</Text>
+            </View>
+          </View>
+          
+          <TouchableOpacity style={styles.followButton}>
+            <Text style={styles.followButtonText}>Follow</Text>
           </TouchableOpacity>
         </View>
-      )}
+
+        {showCommentInput && (
+          <View style={styles.commentInputContainer}>
+            <TextInput
+              style={styles.commentInput}
+              placeholder="Add a comment..."
+              value={commentText}
+              onChangeText={setCommentText}
+              multiline
+            />
+            <TouchableOpacity 
+              style={styles.postCommentButton}
+              onPress={() => {
+                setCommentText('');
+                setShowCommentInput(false);
+              }}
+            >
+              <Text style={styles.postCommentText}>Post</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     </View>
   );
 
@@ -277,19 +374,24 @@ const BlogDetailsScreen = () => {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.relatedPostsContent}
+            decelerationRate="fast"
+            snapToInterval={width * 0.75 + 16}
+            snapToAlignment="center"
           >
             {blog.relatedPosts.slice(0, 2).map((post) => (
               <TouchableOpacity 
                 key={post.id} 
                 style={styles.relatedPostCard}
                 onPress={() => navigation.navigate('BlogDetailsScreen', { blog: post })}
+                activeOpacity={0.9}
               >
                 <Image source={{ uri: post.image }} style={styles.relatedPostImage} />
+                <View style={styles.relatedPostOverlay} />
                 <View style={styles.relatedPostInfo}>
+                  <Text style={styles.relatedPostReadTime}>{post.readTime || '5 min read'}</Text>
                   <Text style={styles.relatedPostTitle} numberOfLines={2}>
                     {post.title}
                   </Text>
-                  <Text style={styles.relatedPostMeta}>{post.readTime || '5 min read'}</Text>
                 </View>
               </TouchableOpacity>
             ))}
@@ -300,6 +402,7 @@ const BlogDetailsScreen = () => {
               key={post.id} 
               style={styles.listItemContainer}
               onPress={() => navigation.navigate('BlogDetailsScreen', { blog: post })}
+              activeOpacity={0.8}
             >
               <Image source={{ uri: post.image }} style={styles.listItemImage} />
               <View style={styles.listItemContent}>
@@ -307,6 +410,7 @@ const BlogDetailsScreen = () => {
                 <Text style={styles.listItemDescription} numberOfLines={2}>
                   {post.description || ''}
                 </Text>
+                <Text style={styles.listItemReadTime}>5 min read</Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -317,12 +421,14 @@ const BlogDetailsScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      {renderHeader()}
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {renderContent()}
-        {renderRelatedPosts()}
-      </ScrollView>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent={true} />
+      <View style={styles.content}>
+        {renderHeader()}
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {renderContent()}
+          {renderRelatedPosts()}
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -332,24 +438,63 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  content: {
+    flex: 1,
+    paddingTop: StatusBar.currentHeight || 0,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+    borderBottomColor: 'rgba(0,0,0,0.05)',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    height: 56,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   backButton: {
-    padding: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.03)',
   },
   backIcon: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     tintColor: '#333',
   },
-  pointsContainer: {
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginLeft: 12,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerIconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+    backgroundColor: 'rgba(0,0,0,0.03)',
+  },
+  headerActionIcon: {
+    width: 18,
+    height: 18,
+    tintColor: '#555',
+  },
+  headerPointsBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff8e1',
@@ -358,106 +503,164 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#ffd54f',
+    marginLeft: 10,
   },
-  pointsIcon: {
-    width: 16,
-    height: 16,
+  headerBadgeIcon: {
+    width: 14,
+    height: 14,
     tintColor: '#ffa000',
     marginRight: 4,
   },
-  pointsText: {
+  headerBadgeText: {
     color: '#795548',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 13,
   },
   contentContainer: {
-    padding: 16,
+    padding: 0,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 16,
-    lineHeight: 32,
-  },
-  mainImage: {
+  heroImage: {
     width: '100%',
-    height: 200,
-    borderRadius: 12,
-    marginBottom: 16,
+    height: 260,
     backgroundColor: '#f0f0f0',
   },
-  blogActions: {
+  contentWrapper: {
+    padding: 16,
+    paddingTop: 12,
+  },
+  titleSection: {
+    marginBottom: 10,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#111',
+    marginBottom: 6,
+    lineHeight: 28,
+  },
+  metaInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+  },
+  readTime: {
+    fontSize: 12,
+    color: '#666',
+  },
+  metaDivider: {
+    fontSize: 10,
+    color: '#999',
+    marginHorizontal: 6,
+  },
+  dateText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  authorBrief: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  authorImageSmall: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: colors.primary + '30',
+  },
+  miniFollowButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  miniFollowText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   actionButton: {
-    marginRight: 24,
+    marginLeft: 8,
   },
-  actionIcon: {
-    width: 24,
-    height: 24,
-    tintColor: '#555',
-  },
-  spacer: {
-    flex: 1,
-  },
-  paragraph: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#555',
-    marginBottom: 16,
-  },
-  videoContainer: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 12,
-    padding: 16,
-    marginVertical: 16,
-    alignItems: 'center',
-  },
-  videoIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#eee',
+  actionIconContainer: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    backgroundColor: '#f5f5f5',
   },
-  downloadIcon: {
-    width: 24,
-    height: 24,
+  actionIconContainerActive: {
+    backgroundColor: '#F44336',
+  },
+  actionIcon: {
+    width: 16,
+    height: 16,
     tintColor: '#555',
   },
-  videoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  videoDuration: {
-    fontSize: 14,
-    color: '#888',
+  divider: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
     marginBottom: 16,
   },
-  watchButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 60,
-    paddingVertical: 12,
-    borderRadius: 24,
-    marginTop: 8,
+  authorFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f9f9f9',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 14,
+    marginBottom: 16,
   },
-  watchButtonText: {
+  authorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  authorImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 12,
+    borderWidth: 1.5,
+    borderColor: colors.primary + '30',
+  },
+  authorInfo: {
+    justifyContent: 'center',
+  },
+  authorName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#222',
+    marginBottom: 2,
+  },
+  authorBio: {
+    fontSize: 13,
+    color: '#666',
+  },
+  followButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    backgroundColor: colors.primary,
+    borderRadius: 20,
+  },
+  followButtonText: {
     color: '#fff',
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: 14,
   },
   commentInputContainer: {
-    marginTop: 16,
+    marginTop: 24,
     marginBottom: 24,
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -465,112 +668,244 @@ const styles = StyleSheet.create({
   commentInput: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    borderRadius: 16,
-    padding: 12,
+    borderRadius: 24,
+    padding: 14,
     maxHeight: 100,
     fontSize: 14,
     color: '#333',
   },
   postCommentButton: {
-    marginLeft: 8,
-    paddingVertical: 8,
+    marginLeft: 10,
+    paddingVertical: 10,
     paddingHorizontal: 16,
     backgroundColor: colors.primary,
-    borderRadius: 16,
+    borderRadius: 24,
   },
   postCommentText: {
     color: '#fff',
     fontWeight: '600',
   },
   relatedPostsContainer: {
-    paddingVertical: 16,
+    paddingVertical: 24,
     backgroundColor: '#f9f9f9',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: 8,
   },
   relatedHeaderContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    marginBottom: 12,
+    marginBottom: 16,
   },
   relatedPostsTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#222',
   },
   seeAllText: {
     fontSize: 14,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   relatedPostsContent: {
     paddingLeft: 16,
     paddingRight: 8,
+    paddingBottom: 8,
   },
   relatedPostCard: {
-    width: width * 0.7,
+    width: width * 0.75,
+    height: 200,
     marginRight: 16,
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    position: 'relative',
   },
   relatedPostImage: {
     width: '100%',
-    height: 140,
+    height: '100%',
     backgroundColor: '#f0f0f0',
   },
+  relatedPostOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundGradient: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
+  },
   relatedPostInfo: {
-    padding: 12,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
+  },
+  relatedPostReadTime: {
+    fontSize: 12,
+    color: '#fff',
+    opacity: 0.8,
+    marginBottom: 6,
   },
   relatedPostTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  relatedPostMeta: {
-    fontSize: 12,
-    color: '#888',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#fff',
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   listItemContainer: {
     flexDirection: 'row',
     marginHorizontal: 16,
-    marginVertical: 8,
-    padding: 12,
+    marginVertical: 10,
+    padding: 14,
     backgroundColor: '#fff',
-    borderRadius: 12,
-    elevation: 1,
+    borderRadius: 16,
+    elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
   },
   listItemImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 8,
+    width: 80,
+    height: 80,
+    borderRadius: 12,
     backgroundColor: '#f0f0f0',
   },
   listItemContent: {
     flex: 1,
-    marginLeft: 12,
-    justifyContent: 'center',
+    marginLeft: 14,
+    justifyContent: 'space-between',
   },
   listItemTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 4,
+    marginBottom: 6,
+    lineHeight: 22,
   },
   listItemDescription: {
     fontSize: 13,
-    color: '#777',
+    color: '#666',
     lineHeight: 18,
+    marginBottom: 8,
+  },
+  listItemReadTime: {
+    fontSize: 12,
+    color: '#888',
+  },
+  contentProse: {
+    marginBottom: 24,
+  },
+  firstParagraph: {
+    fontSize: 18,
+    lineHeight: 28,
+    color: '#333',
+    marginBottom: 20,
+    fontWeight: '500',
+  },
+  paragraph: {
+    fontSize: 16,
+    lineHeight: 26,
+    color: '#444',
+    marginBottom: 20,
+    letterSpacing: 0.2,
+  },
+  videoContainer: {
+    backgroundColor: '#1A2C42',
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 20,
+    marginBottom: 14,
+    overflow: 'hidden',
+  },
+  videoContentWrapper: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  videoLeftContent: {
+    flex: 1,
+    marginRight: 16,
+  },
+  videoTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: 'white',
+    marginBottom: 12,
+  },
+  videoMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  timerContainer: {
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+  timerText: {
+    color: '#FF9800',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  videoSubtitle: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+  },
+  videoIconsContainer: {
+    alignItems: 'center',
+  },
+  timerCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FF9800',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  timerCircleText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  videoActionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  downloadButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  downloadIcon: {
+    width: 20,
+    height: 20,
+    tintColor: 'white',
+  },
+  watchButton: {
+    backgroundColor: '#FF9800',
+    paddingVertical: 12,
+    borderRadius: 24,
+    alignItems: 'center',
+  },
+  watchButtonText: {
+    color: 'white',
+    fontWeight: '700',
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
 });
 

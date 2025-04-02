@@ -278,7 +278,33 @@ const ExploreScreen = () => {
   }, [route.params?.focusSearch]);
 
   const handleGroupPress = () => {
+    // @ts-ignore - Type safety for navigation
     navigation.navigate('GroupScreen');
+  };
+
+  const handleDynamicGroupPress = (item: any) => {
+    // @ts-ignore - Type safety for navigation
+    navigation.navigate('DynamicGroupScreen', {
+      groupId: item.id,
+      groupName: item.title,
+      debateTopic: item.title,
+      debateType: 'vs'
+    });
+  };
+
+  // Add a new function to handle navigation to UnifiedReelsStream
+  const handleUnifiedReelsNavigation = () => {
+    // @ts-ignore - Type safety for navigation
+    navigation.navigate('UnifiedReelsStream');
+  };
+
+  // Add a new function to handle navigation to Profile screen
+  const handleProfileNavigation = (creator: any) => {
+    // @ts-ignore - Type safety for navigation
+    navigation.navigate('Profile', {
+      userId: creator.id,
+      username: creator.username
+    });
   };
 
   return (
@@ -369,7 +395,7 @@ const ExploreScreen = () => {
                 key={item.id} 
                 style={styles.trendingSliderCard} 
                 activeOpacity={0.9}
-                onPress={handleGroupPress}
+                onPress={() => handleDynamicGroupPress(item)}
               >
                 <Image source={{uri: item.image}} style={styles.trendingSliderCardImage} />
                 <View style={styles.trendingCardOverlay}>
@@ -384,7 +410,13 @@ const ExploreScreen = () => {
                       <Text style={styles.cardStatIcon}>👥</Text>
                       <Text style={styles.cardStatText}>{item.likes}</Text>
                     </View>
-                    <TouchableOpacity style={styles.joinButton}>
+                    <TouchableOpacity 
+                      style={styles.joinButton}
+                      onPress={(e) => {
+                        e.stopPropagation(); // Prevent triggering the parent card's onPress
+                        handleDynamicGroupPress(item);
+                      }}
+                    >
                       <Text style={styles.joinButtonText}>Join</Text>
                     </TouchableOpacity>
                   </View>
@@ -429,7 +461,13 @@ const ExploreScreen = () => {
                         <Text style={styles.cardStatText}>{item.comments}</Text>
                       </View>
                     </View>
-                    <TouchableOpacity style={styles.fullSizeJoinButton}>
+                    <TouchableOpacity 
+                      style={styles.fullSizeJoinButton}
+                      onPress={(e) => {
+                        e.stopPropagation(); // Prevent triggering the parent card's onPress
+                        handleGroupPress();
+                      }}
+                    >
                       <Text style={styles.fullSizeJoinButtonText}>Join Discussion</Text>
                     </TouchableOpacity>
                   </View>
@@ -456,7 +494,7 @@ const ExploreScreen = () => {
                   key={item.id} 
                   style={styles.hotTopicItem} 
                   activeOpacity={0.9}
-                  onPress={handleGroupPress}
+                  onPress={handleUnifiedReelsNavigation}
                 >
                   <Image source={{uri: item.image}} style={styles.hotTopicImage} />
                   <View style={styles.hotTopicOverlay}>
@@ -595,7 +633,7 @@ const ExploreScreen = () => {
                 key={creator.id} 
                 style={styles.creatorCard} 
                 activeOpacity={0.9}
-                onPress={handleGroupPress}
+                onPress={() => handleProfileNavigation(creator)}
               >
                 <View style={styles.creatorAvatarContainer}>
                   <Image source={{uri: creator.avatar}} style={styles.creatorAvatar} />
@@ -611,7 +649,13 @@ const ExploreScreen = () => {
                 <View style={styles.creatorStats}>
                   <Text style={styles.creatorFollowers}>{creator.followers} followers</Text>
                 </View>
-                <TouchableOpacity style={styles.followButton}>
+                <TouchableOpacity 
+                  style={styles.followButton}
+                  onPress={(e) => {
+                    e.stopPropagation(); // Prevent triggering the parent card's onPress
+                    handleProfileNavigation(creator);
+                  }}
+                >
                   <Text style={styles.followButtonText}>Follow</Text>
                 </TouchableOpacity>
               </TouchableOpacity>
@@ -861,6 +905,7 @@ const styles = StyleSheet.create({
     padding: 12,
     flex: 1,
     justifyContent: 'space-between',
+    height: 90,
   },
   trendingSliderCardTitle: {
     fontSize: 14,
@@ -868,6 +913,8 @@ const styles = StyleSheet.create({
     color: '#000',
     marginBottom: 6,
     lineHeight: 18,
+    height: 36,
+    overflow: 'hidden',
   },
   trendingCardOverlay: {
     position: 'absolute',
@@ -877,19 +924,28 @@ const styles = StyleSheet.create({
   trendingCardStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
     justifyContent: 'space-between',
+    height: 30,
+    width: '100%',
+    position: 'absolute',
+    bottom: 12,
+    left: 12,
+    right: 12,
   },
   statItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 12,
+    height: 24,
   },
   joinButton: {
     backgroundColor: colors.primary,
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderRadius: 14,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   joinButtonText: {
     color: 'white',
@@ -1358,12 +1414,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   cardStatIcon: {
-    fontSize: 14,
+    fontSize: 16,
     marginRight: 4,
   },
   cardStatText: {
+    fontSize: 12,
     color: '#666',
-    fontSize: 13,
+    fontWeight: '500',
   },
   categoryTag: {
     backgroundColor: colors.primary,

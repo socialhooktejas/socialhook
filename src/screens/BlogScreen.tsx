@@ -26,11 +26,11 @@ const filterIcon = require('../assets/icons/more.png');
 
 // Banner images for carousel
 const BANNER_IMAGES = [
-  'https://images.unsplash.com/photo-1542435503-956c469947f6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YmxvZ3xlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60',
-  'https://images.unsplash.com/photo-1499750310107-5fef28a66643?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8YmxvZ3xlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60',
-  'https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YmxvZ3xlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60',
-  'https://images.unsplash.com/photo-1432821596592-e2c18b78144f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8YmxvZ3xlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60',
-  'https://images.unsplash.com/photo-1487611459768-bd414656ea10?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fGJsb2d8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60',
+  'https://images.unsplash.com/photo-1499750310107-5fef28a66643?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+  'https://images.unsplash.com/photo-1518640467707-6811f4a6ab73?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+  'https://images.unsplash.com/photo-1542744173-05336fcc7ad4?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+  'https://images.unsplash.com/photo-1483058712412-4245e9b90334?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
+  'https://images.unsplash.com/photo-1516382799247-87df95d790b7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
 ];
 
 // Define BlogPost interface
@@ -44,6 +44,7 @@ interface BlogPost {
   views: number;
   image: string;
   isAuthorVerified: boolean;
+  category?: string;
 }
 
 // Blog post data
@@ -144,22 +145,28 @@ const BlogScreen = () => {
   const scrollX = useRef(new Animated.Value(0)).current;
   const bannerRef = useRef<FlatList>(null);
   const [userPoints] = useState(247);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [selectedFilters, setSelectedFilters] = useState({
+    category: 'all',
+    sortBy: 'latest',
+    readTime: 'any',
+  });
 
   // Auto scroll for banner
   React.useEffect(() => {
     const interval = setInterval(() => {
-      if (bannerRef.current) {
+      if (bannerRef.current && BANNER_IMAGES.length > 0) {
         const nextIndex = (activeBannerIndex + 1) % BANNER_IMAGES.length;
-        bannerRef.current.scrollToIndex({
-          index: nextIndex,
+        bannerRef.current.scrollToOffset({
+          offset: nextIndex * width,
           animated: true,
         });
         setActiveBannerIndex(nextIndex);
       }
-    }, 4000);
-
+    }, 5000); // Slightly longer interval for better user experience
+    
     return () => clearInterval(interval);
-  }, [activeBannerIndex]);
+  }, [activeBannerIndex, width]);
 
   // Handle banner scroll
   const handleBannerScroll = Animated.event(
@@ -185,13 +192,30 @@ const BlogScreen = () => {
         <FlatList
           ref={bannerRef}
           data={BANNER_IMAGES}
-          renderItem={({ item }) => (
-            <View style={styles.bannerItemContainer}>
+          renderItem={({ item, index }) => (
+            <TouchableOpacity 
+              activeOpacity={0.9}
+              style={styles.bannerItemContainer}
+              onPress={() => handleBannerPress(index)}
+            >
               <Image source={{ uri: item }} style={styles.bannerImage} />
               <View style={styles.bannerOverlay}>
-                <Text style={styles.bannerTitle}>BLOG</Text>
+                <View style={styles.bannerContent}>
+                  <Text style={styles.bannerCategory}>
+                    {index % 2 === 0 ? 'FEATURED' : 'TRENDING'}
+                  </Text>
+                  <Text style={styles.bannerTitle}>
+                    {index % 5 === 0 ? 'CONTENT CREATION' : 
+                     index % 5 === 1 ? 'PRODUCTIVITY TIPS' : 
+                     index % 5 === 2 ? 'TECH TRENDS' : 
+                     index % 5 === 3 ? 'DESIGN INSIGHTS' : 'CAREER GROWTH'}
+                  </Text>
+                  <View style={styles.bannerReadMore}>
+                    <Text style={styles.bannerReadMoreText}>Read More</Text>
+                  </View>
+                </View>
               </View>
-            </View>
+            </TouchableOpacity>
           )}
           horizontal
           pagingEnabled
@@ -199,45 +223,48 @@ const BlogScreen = () => {
           onScroll={handleBannerScroll}
           onMomentumScrollEnd={onBannerItemChanged}
           keyExtractor={(_, index) => index.toString()}
+          getItemLayout={(_, index) => ({
+            length: width,
+            offset: width * index,
+            index,
+          })}
+          initialScrollIndex={0}
         />
         <View style={styles.dotsContainer}>
-          {BANNER_IMAGES.map((_, index) => {
-            // Calculate dot opacity based on current index
-            const dotOpacity = scrollX.interpolate({
-              inputRange: [
-                (index - 1) * width,
-                index * width,
-                (index + 1) * width,
-              ],
-              outputRange: [0.3, 1, 0.3],
-              extrapolate: 'clamp',
-            });
-
-            // Calculate dot width based on current index
-            const dotWidth = scrollX.interpolate({
-              inputRange: [
-                (index - 1) * width,
-                index * width,
-                (index + 1) * width,
-              ],
-              outputRange: [6, 10, 6],
-              extrapolate: 'clamp',
-            });
-
-            return (
+          {BANNER_IMAGES.map((_, index) => (
+            <TouchableOpacity 
+              key={index.toString()} 
+              onPress={() => {
+                if (bannerRef.current) {
+                  bannerRef.current.scrollToOffset({
+                    offset: index * width,
+                    animated: true,
+                  });
+                  setActiveBannerIndex(index);
+                }
+              }}
+            >
               <Animated.View
-                key={index.toString()}
                 style={[
                   styles.dot,
-                  { opacity: dotOpacity, width: dotWidth, height: dotWidth },
                   activeBannerIndex === index && styles.activeDot,
                 ]}
               />
-            );
-          })}
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
     );
+  };
+
+  // Add a handler for banner press
+  const handleBannerPress = (index: number) => {
+    // Navigate to a specific blog or category based on the banner
+    const blogId = BLOG_POSTS[index % BLOG_POSTS.length].id;
+    const blog = BLOG_POSTS.find(blog => blog.id === blogId);
+    if (blog) {
+      handleBlogPress(blog);
+    }
   };
 
   // Render categories
@@ -278,34 +305,47 @@ const BlogScreen = () => {
       <TouchableOpacity 
         style={styles.blogPostContainer}
         onPress={() => handleBlogPress(item)}
+        activeOpacity={0.92}
       >
-        <Image source={{ uri: item.image }} style={styles.blogPostImage} />
+        <View style={styles.blogPostImageContainer}>
+          <Image source={{ uri: item.image }} style={styles.blogPostImage} />
+          <View style={styles.blogPostImageOverlay} />
+          <View style={styles.blogPostCategory}>
+            <Text style={styles.blogPostCategoryText}>{item.category || 'Featured'}</Text>
+          </View>
+        </View>
+        
         <View style={styles.blogPostContent}>
-          <Text style={styles.blogPostTitle}>{item.title}</Text>
-          <Text style={styles.blogPostSummary} numberOfLines={2}>
-            {item.summary}
-          </Text>
+          <Text style={styles.blogPostTitle} numberOfLines={2}>{item.title}</Text>
+          
           <View style={styles.blogPostFooter}>
-            <View style={styles.blogPostPointsContainer}>
-              <Image 
-                source={require('../assets/icons/coin.png')} 
-                style={styles.pointIcon} 
-              />
-              <Text style={styles.blogPostPoints}>{item.points} points</Text>
-            </View>
-            <View style={styles.blogPostViewsContainer}>
-              <Image 
-                source={require('../assets/icons/search.png')} 
-                style={[styles.viewsIcon, {tintColor: '#888'}]} 
-              />
-              <Text style={styles.blogPostViews}>{item.views}</Text>
-            </View>
             <View style={styles.blogPostAuthorContainer}>
               <Image 
                 source={{ uri: item.authorAvatar }} 
                 style={styles.authorAvatar} 
               />
               <Text style={styles.authorName}>{item.author}</Text>
+              {item.isAuthorVerified && (
+                <View style={styles.verifiedBadge}>
+                  <Text style={styles.verifiedIcon}>✓</Text>
+                </View>
+              )}
+            </View>
+            
+            <View style={styles.blogPostRightSection}>
+              <View style={styles.blogPostViewsContainer}>
+                <Image 
+                  source={require('../assets/icons/search.png')} 
+                  style={styles.viewsIcon} 
+                />
+                <Text style={styles.blogPostViews}>{item.views}</Text>
+              </View>
+              <TouchableOpacity style={styles.shareButton}>
+                <Image 
+                  source={require('../assets/icons/send.png')} 
+                  style={styles.shareIcon} 
+                />
+              </TouchableOpacity>
             </View>
           </View>
         </View>
@@ -318,6 +358,12 @@ const BlogScreen = () => {
     return (
       <View style={styles.header}>
         <View style={styles.searchContainer}>
+          <TouchableOpacity 
+            style={styles.filterIconContainer}
+            onPress={() => setFilterModalVisible(true)}
+          >
+            <Image source={filterIcon} style={styles.filterIcon} />
+          </TouchableOpacity>
           <TextInput
             style={styles.searchInput}
             placeholder="Search blogs..."
@@ -329,37 +375,186 @@ const BlogScreen = () => {
             <Image source={searchIcon} style={styles.searchIcon} />
           </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.filterButton}>
-          <Image source={filterIcon} style={styles.filterIcon} />
-          <Text style={styles.filterText}>Filter</Text>
+        <TouchableOpacity style={styles.pointsContainer}>
+          <Image 
+            source={require('../assets/icons/coin.png')} 
+            style={styles.headerPointsIcon} 
+          />
+          <Text style={styles.headerPointsText}>{userPoints}</Text>
         </TouchableOpacity>
       </View>
     );
   };
 
-  // User points footer
-  const renderPointsFooter = () => {
+  // Define filter options
+  const SORT_OPTIONS = [
+    { id: 'latest', label: 'Latest' },
+    { id: 'popular', label: 'Most Popular' },
+    { id: 'points', label: 'Highest Points' },
+  ];
+
+  const READ_TIME_OPTIONS = [
+    { id: 'any', label: 'Any Length' },
+    { id: 'short', label: '< 5 min' },
+    { id: 'medium', label: '5-10 min' },
+    { id: 'long', label: '> 10 min' },
+  ];
+
+  // Add filter modal component
+  const renderFilterModal = () => {
+    if (!filterModalVisible) return null;
+    
     return (
-      <View style={styles.pointsFooterContainer}>
-        <View style={styles.pointsInfo}>
-          <Image 
-            source={require('../assets/icons/coin.png')} 
-            style={styles.pointsFooterIcon} 
-          />
-          <Text style={styles.pointsText}>Your Points</Text>
+      <TouchableOpacity 
+        style={styles.filterModalOverlay}
+        activeOpacity={1}
+        onPress={() => setFilterModalVisible(false)}
+      >
+        <View 
+          style={styles.filterModalContainer}
+          onStartShouldSetResponder={() => true}
+          onResponderRelease={(e) => e.stopPropagation()}
+        >
+          <View style={styles.filterModalHeader}>
+            <Text style={styles.filterModalTitle}>Filter Blogs</Text>
+            <TouchableOpacity onPress={() => setFilterModalVisible(false)}>
+              <Text style={styles.filterModalClose}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {/* Categories Filter */}
+          <View style={styles.filterSection}>
+            <Text style={styles.filterSectionTitle}>Categories</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterOptionsContainer}
+            >
+              {CATEGORIES.map((category) => (
+                <TouchableOpacity
+                  key={category.id}
+                  style={[
+                    styles.filterOption,
+                    selectedFilters.category === category.id && styles.filterOptionSelected,
+                  ]}
+                  onPress={() => setSelectedFilters({
+                    ...selectedFilters,
+                    category: category.id
+                  })}
+                >
+                  <Text
+                    style={[
+                      styles.filterOptionText,
+                      selectedFilters.category === category.id && styles.filterOptionTextSelected,
+                    ]}
+                  >
+                    {category.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+          
+          {/* Sort By Filter */}
+          <View style={styles.filterSection}>
+            <Text style={styles.filterSectionTitle}>Sort By</Text>
+            <View style={styles.filterOptionsRow}>
+              {SORT_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.id}
+                  style={[
+                    styles.filterOption,
+                    selectedFilters.sortBy === option.id && styles.filterOptionSelected,
+                  ]}
+                  onPress={() => setSelectedFilters({
+                    ...selectedFilters,
+                    sortBy: option.id
+                  })}
+                >
+                  <Text
+                    style={[
+                      styles.filterOptionText,
+                      selectedFilters.sortBy === option.id && styles.filterOptionTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          
+          {/* Read Time Filter */}
+          <View style={styles.filterSection}>
+            <Text style={styles.filterSectionTitle}>Read Time</Text>
+            <View style={styles.filterOptionsRow}>
+              {READ_TIME_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.id}
+                  style={[
+                    styles.filterOption,
+                    selectedFilters.readTime === option.id && styles.filterOptionSelected,
+                  ]}
+                  onPress={() => setSelectedFilters({
+                    ...selectedFilters,
+                    readTime: option.id
+                  })}
+                >
+                  <Text
+                    style={[
+                      styles.filterOptionText,
+                      selectedFilters.readTime === option.id && styles.filterOptionTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+          
+          {/* Apply and Reset Buttons */}
+          <View style={styles.filterButtonsContainer}>
+            <TouchableOpacity 
+              style={styles.resetButton}
+              onPress={() => {
+                setSelectedFilters({
+                  category: 'all',
+                  sortBy: 'latest',
+                  readTime: 'any',
+                });
+                setActiveCategory('all');
+              }}
+            >
+              <Text style={styles.resetButtonText}>Reset</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.applyButton}
+              onPress={() => {
+                setActiveCategory(selectedFilters.category);
+                setFilterModalVisible(false);
+                // In a real app, you'd apply other filters here
+              }}
+            >
+              <Text style={styles.applyButtonText}>Apply</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <Text style={styles.pointsValue}>{userPoints}</Text>
-        <View style={styles.pointsActions}>
-          <Text style={styles.pointsActionText}>Create: +2 points</Text>
-          <Text style={styles.pointsActionText}>Read: +1 point</Text>
-        </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
+  // Add random categories to blog posts if they don't have them
+  BLOG_POSTS.forEach(post => {
+    if (!post.category) {
+      const categories = ['Tech', 'Design', 'Business', 'Lifestyle', 'Health'];
+      post.category = categories[Math.floor(Math.random() * categories.length)];
+    }
+  });
+
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="dark-content" translucent={true} backgroundColor="transparent" />
       
       {/* Main content */}
       <View style={styles.content}>
@@ -373,17 +568,24 @@ const BlogScreen = () => {
           ListHeaderComponent={() => (
             <>
               {renderBanner()}
-              <View style={styles.latestBlogsContainer}>
+              <View style={styles.latestBlogsHeader}>
                 <Text style={styles.latestBlogsTitle}>Latest Blogs</Text>
-                {renderCategories()}
+                <TouchableOpacity 
+                  style={styles.viewAllButton}
+                  onPress={() => setActiveCategory('all')}
+                >
+                  <Text style={styles.viewAllText}>View All</Text>
+                </TouchableOpacity>
               </View>
+              {renderCategories()}
             </>
           )}
           contentContainerStyle={styles.listContentContainer}
         />
       </View>
       
-      {renderPointsFooter()}
+      {/* Filter Modal */}
+      {renderFilterModal()}
     </SafeAreaView>
   );
 };
@@ -395,26 +597,28 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    paddingTop: StatusBar.currentHeight || 0,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 7,
     backgroundColor: '#f5f5f5',
     borderBottomWidth: 1,
     borderBottomColor: '#eaeaea',
     elevation: 1,
+    marginTop: 5,
   },
   searchContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
-    borderRadius: 30,
-    paddingHorizontal: 16,
-    marginRight: 12,
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    marginRight: 8,
     height: 38,
     borderWidth: 1,
     borderColor: '#eaeaea',
@@ -429,39 +633,50 @@ const styles = StyleSheet.create({
   searchIconContainer: {
     padding: 4,
   },
+  filterIconContainer: {
+    paddingHorizontal: 6,
+  },
   searchIcon: {
     width: 18,
     height: 18,
     tintColor: '#999',
   },
-  filterButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 30,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#eaeaea',
-  },
   filterIcon: {
     width: 14,
     height: 14,
     tintColor: '#888',
+  },
+  pointsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#eaeaea',
+  },
+  headerPointsIcon: {
+    width: 16,
+    height: 16,
+    tintColor: '#FFC107',
     marginRight: 4,
   },
-  filterText: {
-    fontSize: 12,
-    color: '#666',
-    fontWeight: '500',
+  headerPointsText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '700',
   },
   bannerContainer: {
-    height: 200,
+    height: 240, // Increased height for better visual impact
     width: '100%',
+    position: 'relative',
+    marginTop: 8,
+    marginBottom: 8,
   },
   bannerItemContainer: {
     width,
-    height: 200,
+    height: 240, // Match the container height
     position: 'relative',
   },
   bannerImage: {
@@ -471,55 +686,106 @@ const styles = StyleSheet.create({
   },
   bannerOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Darker overlay for better text readability
+    justifyContent: 'flex-end', // Align content to bottom
+    alignItems: 'flex-start', // Align to left
+    padding: 20,
+  },
+  bannerContent: {
+    width: '80%',
+  },
+  bannerCategory: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.primary,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 4,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
   },
   bannerTitle: {
-    fontSize: 48,
+    fontSize: 26,
     fontWeight: 'bold',
     color: '#ffffff',
-    letterSpacing: 4,
+    letterSpacing: 0.5,
+    marginBottom: 16,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  bannerReadMore: {
+    backgroundColor: colors.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+    marginBottom: 10,
+  },
+  bannerReadMoreText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
   },
   dotsContainer: {
     position: 'absolute',
     bottom: 16,
+    right: 16,
     flexDirection: 'row',
-    justifyContent: 'center',
-    width: '100%',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    zIndex: 10,
   },
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 5,
-    backgroundColor: '#ffffff',
-    marginHorizontal: 3,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    marginHorizontal: 4,
   },
   activeDot: {
-    backgroundColor: '#ffffff',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary,
+    marginHorizontal: 4,
   },
-  latestBlogsContainer: {
-    marginTop: 16,
+  latestBlogsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 6,
   },
   latestBlogsTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 12,
+  },
+  viewAllButton: {
+    padding: 5,
+  },
+  viewAllText: {
+    fontSize: 13,
+    color: colors.primary,
+    fontWeight: '600',
   },
   categoriesContainer: {
-    marginTop: 8,
-    marginBottom: 16,
+    marginTop: 0,
+    marginBottom: 8,
+    paddingHorizontal: 16,
+    maxHeight: 36,
   },
   categoriesContent: {
-    paddingRight: 16,
+    paddingRight: 8,
   },
   categoryItem: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    marginRight: 6,
+    borderRadius: 16,
     backgroundColor: '#f5f5f5',
     borderWidth: 1,
     borderColor: '#eaeaea',
@@ -529,7 +795,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   categoryText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#777',
     fontWeight: '500',
   },
@@ -542,128 +808,255 @@ const styles = StyleSheet.create({
   },
   blogPostContainer: {
     marginHorizontal: 16,
-    marginVertical: 8,
+    marginVertical: 12,
     borderRadius: 12,
     backgroundColor: '#ffffff',
     overflow: 'hidden',
-    elevation: 2,
+    elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    borderWidth: 1,
-    borderColor: '#f0f0f0',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    borderWidth: 0,
+    position: 'relative',
+  },
+  blogPostImageContainer: {
+    position: 'relative',
+    height: 200,
+    width: '100%',
   },
   blogPostImage: {
-    height: 180,
+    height: '100%',
     width: '100%',
     resizeMode: 'cover',
   },
+  blogPostImageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  blogPostCategory: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+  },
+  blogPostCategoryText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+  },
   blogPostContent: {
-    padding: 16,
+    padding: 18,
+    paddingBottom: 16,
+    backgroundColor: '#ffffff',
   },
   blogPostTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 8,
-  },
-  blogPostSummary: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-    marginBottom: 12,
+    color: '#222',
+    marginBottom: 14,
+    lineHeight: 26,
   },
   blogPostFooter: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 4,
-  },
-  blogPostPointsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  pointIcon: {
-    width: 16,
-    height: 16,
-    tintColor: '#FFC107',
-    marginRight: 4,
-  },
-  blogPostPoints: {
-    fontSize: 13,
-    color: '#888',
-    fontWeight: '500',
-  },
-  blogPostViewsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  viewsIcon: {
-    width: 15,
-    height: 15,
-    marginRight: 4,
-  },
-  blogPostViews: {
-    fontSize: 13,
-    color: '#888',
+    marginTop: 8,
   },
   blogPostAuthorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   authorAvatar: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    marginRight: 6,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 8,
+    borderWidth: 2,
+    borderColor: 'white',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 2,
   },
   authorName: {
-    fontSize: 12,
-    color: '#777',
-    fontWeight: '500',
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '600',
   },
-  pointsFooterContainer: {
+  verifiedBadge: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 4,
+    borderWidth: 1.5,
+    borderColor: 'white',
+  },
+  verifiedIcon: {
+    fontSize: 9,
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  blogPostRightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  blogPostViewsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginRight: 12,
+    backgroundColor: '#f7f7f7',
+    borderRadius: 16,
+  },
+  viewsIcon: {
+    width: 16,
+    height: 16,
+    marginRight: 6,
+    tintColor: '#777',
+  },
+  blogPostViews: {
+    fontSize: 13,
+    color: '#555',
+    fontWeight: '600',
+  },
+  shareButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  shareIcon: {
+    width: 16,
+    height: 16,
+    tintColor: '#555',
+  },
+  filterModalOverlay: {
     position: 'absolute',
-    bottom: 0,
+    top: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.primary,
-    padding: 12,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterModalContainer: {
+    width: '85%',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    maxHeight: '80%',
+  },
+  filterModalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eaeaea',
   },
-  pointsInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  pointsFooterIcon: {
-    width: 20,
-    height: 20,
-    tintColor: '#FFD700',
-    marginRight: 8,
-  },
-  pointsText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  pointsValue: {
+  filterModalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#333',
   },
-  pointsActions: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
+  filterModalClose: {
+    fontSize: 20,
+    color: '#999',
+    padding: 4,
   },
-  pointsActionText: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: 2,
+  filterSection: {
+    marginBottom: 16,
+  },
+  filterSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#444',
+    marginBottom: 10,
+  },
+  filterOptionsContainer: {
+    paddingRight: 8,
+  },
+  filterOptionsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  filterOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+    marginBottom: 8,
+    borderRadius: 16,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#eaeaea',
+  },
+  filterOptionSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterOptionText: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '500',
+  },
+  filterOptionTextSelected: {
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  filterButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#eaeaea',
+  },
+  resetButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#f9f9f9',
+  },
+  resetButtonText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '600',
+  },
+  applyButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    backgroundColor: colors.primary,
+  },
+  applyButtonText: {
+    fontSize: 14,
+    color: 'white',
+    fontWeight: '600',
   },
 });
 

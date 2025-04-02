@@ -606,15 +606,11 @@ const UnifiedReelsStream = () => {
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
       
       {/* Scrollable Reels */}
-      <ScrollView
-        style={styles.reelsScrollView}
-        pagingEnabled
-        showsVerticalScrollIndicator={false}
-        onScroll={handleReelScroll}
-        scrollEventThrottle={16}
-      >
-        {SAMPLE_REELS.map((reel, index) => (
-          <View key={reel.id} style={styles.reelContainer}>
+      <FlatList
+        data={SAMPLE_REELS}
+        keyExtractor={(item) => item.id}
+        renderItem={({item, index}) => (
+          <View key={item.id} style={styles.reelContainer}>
             {/* This would be a video component in a real implementation */}
             <Image 
               source={{ uri: 'https://i.ibb.co/n3wjfJb/concert-audience.jpg' }}
@@ -625,8 +621,13 @@ const UnifiedReelsStream = () => {
             {/* Overlay gradient for better readability */}
             <View style={styles.gradientOverlay} />
           </View>
-        ))}
-      </ScrollView>
+        )}
+        style={styles.reelsScrollView}
+        pagingEnabled
+        showsVerticalScrollIndicator={false}
+        onScroll={handleReelScroll}
+        scrollEventThrottle={16}
+      />
       
       {/* Top bar with back button and live indicator */}
       <View style={styles.topBar}>
@@ -725,21 +726,18 @@ const UnifiedReelsStream = () => {
           </View>
         )}
         
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={item => item.id}
+        {/* Use ScrollView instead of FlatList to avoid nested VirtualizedLists */}
+        <ScrollView
           contentContainerStyle={styles.chatMessagesContainer}
           showsVerticalScrollIndicator={false}
-          onScrollToIndexFailed={() => {}}
           scrollEventThrottle={16}
-          snapToAlignment="start"
-          decelerationRate="fast"
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
-          windowSize={10}
-        />
+        >
+          {messages.map(item => (
+            <View key={`message-${item.id}`}>
+              {renderMessage({item})}
+            </View>
+          ))}
+        </ScrollView>
       </View>
       
       {/* Post Description - Below live chat */}

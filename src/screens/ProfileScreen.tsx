@@ -12,6 +12,7 @@ import {
   Animated,
   FlatList,
   TextInput,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../utils/theme';
@@ -264,10 +265,12 @@ const ProfileScreen = () => {
         ]}
       >
         <View style={styles.headerContent}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Image source={backIcon} style={styles.headerIcon} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{PROFILE_DATA.username}</Text>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Image source={backIcon} style={styles.headerIcon} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>{PROFILE_DATA.username}</Text>
+          </View>
           <TouchableOpacity>
             <Image source={menuIcon} style={styles.headerIcon} />
           </TouchableOpacity>
@@ -276,14 +279,13 @@ const ProfileScreen = () => {
 
       {/* Regular header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Image source={backIcon} style={styles.headerIcon} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{PROFILE_DATA.username}</Text>
-        <View style={styles.headerRightContainer}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Image source={notificationIcon} style={styles.headerIcon} />
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Image source={backIcon} style={styles.headerIcon} />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>{PROFILE_DATA.username}</Text>
+        </View>
+        <View style={styles.headerRightContainer}>
           <TouchableOpacity style={styles.iconButton}>
             <Image source={menuIcon} style={styles.headerIcon} />
           </TouchableOpacity>
@@ -321,19 +323,23 @@ const ProfileScreen = () => {
       </View>
 
       <View style={styles.bioContainer}>
-        <View style={styles.usernameContainer}>
+        <View style={styles.nameVerifiedContainer}>
           <Text style={styles.displayName}>{PROFILE_DATA.displayName}</Text>
           {PROFILE_DATA.isVerified && (
             <Image source={verifiedIcon} style={styles.verifiedIcon} />
           )}
         </View>
-        <Text style={styles.username}>@{PROFILE_DATA.username}</Text>
-        <Text style={styles.bioText}>{PROFILE_DATA.bio}</Text>
         
-        <TouchableOpacity style={styles.websiteContainer}>
-          <Image source={linkIcon} style={styles.linkIcon} />
-          <Text style={styles.websiteText}>{PROFILE_DATA.website}</Text>
-        </TouchableOpacity>
+        <Text style={styles.username}>@{PROFILE_DATA.username}</Text>
+        
+        <View style={styles.bioInfoRow}>
+          <Text style={styles.bioText} numberOfLines={1}>{PROFILE_DATA.bio}</Text>
+          
+          <View style={styles.websiteLink}>
+            <Image source={linkIcon} style={styles.linkIcon} />
+            <Text style={styles.websiteText} numberOfLines={1}>{PROFILE_DATA.website}</Text>
+          </View>
+        </View>
       </View>
 
       <View style={styles.actionsContainer}>
@@ -361,31 +367,33 @@ const ProfileScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.highlightsScrollView}
-        contentContainerStyle={styles.highlightsContainer}
-      >
-        {HIGHLIGHTS.map(highlight => (
-          <TouchableOpacity key={highlight.id} style={styles.highlightItem}>
-            <View style={styles.highlightImageContainer}>
-              {highlight.isAdd ? (
-                <View style={styles.addHighlightButton}>
-                  <Text style={styles.addHighlightIcon}>+</Text>
-                </View>
-              ) : (
-                <Image 
-                  source={{ uri: highlight.thumbnail }} 
-                  style={styles.highlightImage}
-                  resizeMode="cover"
-                />
-              )}
-            </View>
-            <Text style={styles.highlightTitle} numberOfLines={1}>{highlight.title}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <View style={styles.highlightsWrapper}>
+        <ScrollView 
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.highlightsScrollView}
+          contentContainerStyle={styles.highlightsContainer}
+        >
+          {HIGHLIGHTS.map(highlight => (
+            <TouchableOpacity key={highlight.id} style={styles.highlightItem}>
+              <View style={styles.highlightImageContainer}>
+                {highlight.isAdd ? (
+                  <View style={styles.addHighlightButton}>
+                    <Text style={styles.addHighlightIcon}>+</Text>
+                  </View>
+                ) : (
+                  <Image 
+                    source={{ uri: highlight.thumbnail }} 
+                    style={styles.highlightImage}
+                    resizeMode="cover"
+                  />
+                )}
+              </View>
+              <Text style={styles.highlightTitle} numberOfLines={1}>{highlight.title}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
     </View>
   );
 
@@ -480,27 +488,6 @@ const ProfileScreen = () => {
     </View>
   );
 
-  const renderInteractiveFeatures = () => (
-    <View style={styles.interactiveContainer}>
-      <Text style={styles.interactiveHeader}>Try these interactive features</Text>
-      <FlatList
-        data={INTERACTIVE_FEATURES}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.interactiveList}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.interactiveItem}>
-            <View style={styles.interactiveIconContainer}>
-              <Image source={item.icon} style={styles.interactiveIcon} />
-            </View>
-            <Text style={styles.interactiveTitle}>{item.title}</Text>
-          </TouchableOpacity>
-        )}
-        keyExtractor={item => item.id}
-      />
-    </View>
-  );
-
   const renderTabContent = () => {
     if (activeTab === 'grid' || activeTab === 'reels') {
       return renderVideoGrid();
@@ -524,7 +511,8 @@ const ProfileScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="dark-content" backgroundColor="white" translucent={true} />
+      <View style={styles.statusBarSpacer} />
       {renderHeader()}
       
       <Animated.ScrollView
@@ -537,7 +525,6 @@ const ProfileScreen = () => {
         scrollEventThrottle={16}
       >
         {renderProfileInfo()}
-        {renderInteractiveFeatures()}
         {renderTabs()}
         {renderTabContent()}
       </Animated.ScrollView>
@@ -550,6 +537,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  statusBarSpacer: {
+    height: StatusBar.currentHeight || 0,
+    backgroundColor: '#fff',
+  },
   scrollContent: {
     paddingBottom: 20,
   },
@@ -558,17 +549,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 3,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
     backgroundColor: '#fff',
+    height: 42,
   },
   animatedHeader: {
     position: 'absolute',
-    top: 0,
+    top: StatusBar.currentHeight || 0,
     left: 0,
     right: 0,
-    height: 60,
+    height: 42,
     backgroundColor: '#fff',
     zIndex: 999,
     borderBottomWidth: 1,
@@ -587,10 +579,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     height: '100%',
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
+    marginLeft: 12,
   },
   headerIcon: {
     width: 24,
@@ -606,13 +603,13 @@ const styles = StyleSheet.create({
   },
   profileInfoContainer: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 6,
+    paddingTop: 12,
+    paddingBottom: 0,
   },
   profileHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   avatarContainer: {
     position: 'relative',
@@ -632,18 +629,71 @@ const styles = StyleSheet.create({
     marginLeft: 20,
   },
   bioContainer: {
-    marginBottom: 14,
+    marginBottom: 10,
+  },
+  nameVerifiedContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
   },
   displayName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#222',
     marginRight: 4,
+  },
+  verifiedIcon: {
+    width: 16,
+    height: 16,
+    tintColor: colors.primary,
   },
   username: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 6,
+    marginBottom: 4,
+  },
+  bioInfoRow: {
+    flexDirection: 'column',
+    marginBottom: 4,
+  },
+  bioText: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 4,
+  },
+  websiteLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  linkIcon: {
+    width: 14,
+    height: 14,
+    tintColor: colors.primary,
+    marginRight: 4,
+  },
+  websiteText: {
+    fontSize: 14,
+    color: colors.primary,
+    flex: 1,
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    marginBottom: 10,
+    width: '100%',
+  },
+  actionButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  primaryActionButton: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    marginRight: 8,
+    borderRadius: 18,
+    paddingVertical: 8,
   },
   messageButton: {
     backgroundColor: '#f0f0f0',
@@ -651,52 +701,47 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
   },
-  actionButtonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 14,
-  },
   messageButtonText: {  
     color: '#333',
     fontWeight: '600',
     fontSize: 14,
   },
+  highlightsWrapper: {
+    marginTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    paddingTop: 8,
+  },
   highlightsScrollView: {
-    marginTop: 10,
-    marginBottom: 10,
+    marginBottom: 4,
   },
   highlightsContainer: {
-    paddingBottom: 6,
-    paddingRight: 20,
+    paddingBottom: 2,
+    paddingRight: 10,
   },
   highlightItem: {
     alignItems: 'center',
-    marginRight: 16,
-    width: 70,
+    marginRight: 14,
+    width: 66,
   },
   highlightImageContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     borderWidth: 1,
     borderColor: '#ddd',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
   },
   highlightImage: {
     width: '100%',
     height: '100%',
   },
   highlightTitle: {
-    fontSize: 12,
-    color: '#333',
+    fontSize: 11,
+    color: '#555',
     textAlign: 'center',
   },
   addHighlightButton: {
@@ -710,92 +755,18 @@ const styles = StyleSheet.create({
     fontSize: 28,
     color: '#999',
   },
-  bioText: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  websiteContainer: {
-    flexDirection: 'row',
+  statItem: {
     alignItems: 'center',
-    marginBottom: 16,
   },
-  linkIcon: {
-    width: 16,
-    height: 16,
-    tintColor: '#888',
-    marginRight: 6,
-  },
-  websiteText: {
-    fontSize: 14,
-    color: colors.primary,
-  },
-  interactiveContainer: {
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  interactiveHeader: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
-    marginLeft: 16,
-    marginBottom: 12,
-  },
-  interactiveList: {
-    paddingHorizontal: 16,
-  },
-  interactiveItem: {
-    alignItems: 'center',
-    marginRight: 24,
-  },
-  interactiveIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#f5f5f5',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  interactiveIcon: {
-    width: 22,
-    height: 22,
-    tintColor: '#333',
-  },
-  interactiveTitle: {
-    fontSize: 12,
+  statNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
     color: '#333',
   },
-  tabsContainer: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    backgroundColor: '#fff',
-    elevation: 1,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'transparent',
-  },
-  activeTab: {
-    borderBottomColor: colors.primary,
-  },
-  tabIcon: {
-    width: 22,
-    height: 22,
-    tintColor: '#888',
-  },
-  activeTabIcon: {
-    tintColor: colors.primary,
+  statLabel: {
+    fontSize: 13,
+    color: '#888',
+    marginTop: 2,
   },
   videoGrid: {
     flexDirection: 'row',
@@ -906,52 +877,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-  usernameContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  verifiedIcon: {
-    width: 16,
-    height: 16,
-    tintColor: colors.primary,
-  },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  statLabel: {
-    fontSize: 13,
-    color: '#888',
-    marginTop: 2,
-  },
-  actionsContainer: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    width: '100%',
-  },
-  actionButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  primaryActionButton: {
-    flex: 1,
-    backgroundColor: colors.primary,
-    marginRight: 8,
-    borderRadius: 20,
-    paddingVertical: 10,
-  },
   followingButton: {
     backgroundColor: '#f0f0f0',
     borderWidth: 1,
     borderColor: '#ddd',
+  },
+  followingButtonText: {
+    color: '#333',
+    fontWeight: '600',
+    fontSize: 14,
   },
   secondaryActionButton: {
     backgroundColor: '#f5f5f5',
@@ -961,15 +895,35 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 4,
   },
-  followingButtonText: {
-    color: '#333',
+  actionButtonText: {
+    color: '#fff',
     fontWeight: '600',
     fontSize: 14,
   },
-  followIcon: {
-    width: 20,
-    height: 20,
-    tintColor: '#333',
+  tabsContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#fff',
+    elevation: 1,
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'transparent',
+  },
+  activeTab: {
+    borderBottomColor: colors.primary,
+  },
+  tabIcon: {
+    width: 22,
+    height: 22,
+    tintColor: '#888',
+  },
+  activeTabIcon: {
+    tintColor: colors.primary,
   },
   likeAnimation: {
     position: 'absolute',
@@ -985,6 +939,11 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     tintColor: '#fff',
+  },
+  followIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#333',
   },
 });
 

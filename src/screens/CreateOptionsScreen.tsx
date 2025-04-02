@@ -1,33 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, BackHandler } from 'react-native';
-import { CommonActions, useNavigation } from '@react-navigation/native';
+import { View, StyleSheet } from 'react-native';
+import { CommonActions, useNavigation, useIsFocused } from '@react-navigation/native';
 import CreateOptionsModal from '../components/CreateOptionsModal';
 
 const CreateOptionsScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const navigation = useNavigation();
+  const isFocused = useIsFocused();
 
   useEffect(() => {
     // Show modal when screen is focused
-    const unsubscribe = navigation.addListener('focus', () => {
+    if (isFocused) {
       setModalVisible(true);
-    });
-
-    // Add back button handler
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (modalVisible) {
-        setModalVisible(false);
-        navigation.goBack();
-        return true;
-      }
-      return false;
-    });
-
+    }
+    
     return () => {
-      unsubscribe();
-      backHandler.remove();
+      setModalVisible(false);
     };
-  }, [navigation, modalVisible]);
+  }, [isFocused]);
 
   const handleClose = () => {
     setModalVisible(false);
@@ -89,12 +79,7 @@ const CreateOptionsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'transparent',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    backgroundColor: 'transparent', // Make the container transparent to show underlying screen
   },
 });
 

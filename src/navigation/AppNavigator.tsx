@@ -25,6 +25,8 @@ import BlogScreen from '../screens/BlogScreen';
 import BlogDetailsScreen from '../screens/BlogDetailsScreen';
 import RedirectScreen from '../screens/RedirectScreen';
 import UnifiedReelsStream from '../screens/UnifiedReelsStream';
+import WithdrawScreen from '../screens/WithdrawScreen';
+import NotificationScreen from '../screens/NotificationScreen';
 
 // Import icons
 const homeIcon = require('../assets/icons/homepage.png');
@@ -54,6 +56,8 @@ export type RootStackParamList = {
   RedirectScreen: { videoUrl?: string; title?: string };
   ExploreScreen: { focusSearch?: boolean };
   UnifiedReelsStream: undefined;
+  WithdrawScreen: undefined;
+  NotificationScreen: undefined;
 };
 
 export type MainTabParamList = {
@@ -63,6 +67,7 @@ export type MainTabParamList = {
   CreatePost: undefined;
   Blogs: undefined;
   Profile: undefined;
+  GroupScreen: { groupId: string; groupName?: string; debateTopic?: string; debateType?: 'vs' | 'poll' };
 };
 
 // Create navigators
@@ -223,6 +228,14 @@ const MainTabNavigator = () => {
           tabBarIcon: ({ focused }) => <ProfileIcon focused={focused} /> 
         }}
       />
+      <Tab.Screen 
+        name="GroupScreen" 
+        component={GroupScreen} 
+        options={{
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' }
+        }}
+      />
     </Tab.Navigator>
   );
 };
@@ -241,7 +254,6 @@ const AppNavigator = () => {
           <Stack.Screen name="Interests" component={InterestsScreen} />
           <Stack.Screen name="Main" component={MainTabNavigator} />
           <Stack.Screen name="CreatePost" component={CreatePostScreen} />
-          <Stack.Screen name="GroupScreen" component={GroupScreen} />
           <Stack.Screen name="DynamicGroupScreen" component={DynamicGroupScreen} />
           <Stack.Screen 
             name="CommentsScreen" 
@@ -268,6 +280,8 @@ const AppNavigator = () => {
             component={ExploreScreen} 
           />
           <Stack.Screen name="UnifiedReelsStream" component={UnifiedReelsStream} />
+          <Stack.Screen name="WithdrawScreen" component={WithdrawScreen} />
+          <Stack.Screen name="NotificationScreen" component={NotificationScreen} />
        </Stack.Navigator>
      </NavigationContainer>
     </SafeAreaProvider>
@@ -320,12 +334,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 0,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: '#FFFFFF',
   },
   createPostImage: {
     width: 26,
     height: 26,
     resizeMode: 'contain',
+    tintColor: '#FFFFFF',
   },
 });
 

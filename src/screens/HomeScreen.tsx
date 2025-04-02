@@ -17,6 +17,7 @@ import ReelItem from '../components/ReelItem';
 // Import local icons
 const searchIcon = require('../assets/icons/search.png');
 const podiumIcon = require('../assets/icons/podium.png');
+const notificationIcon = require('../assets/icons/notifications.png');
 
 // Sample data
 const SAMPLE_REELS = [
@@ -110,6 +111,10 @@ const HomeHeader = () => {
     navigation.navigate('ExploreScreen', { focusSearch: true });
   };
   
+  const handleNotificationPress = () => {
+    navigation.navigate('NotificationScreen');
+  };
+  
   return (
     <View style={styles.header}>
       <View style={styles.tabsContainer}>
@@ -146,6 +151,15 @@ const HomeHeader = () => {
           onPress={handlePodiumPress}
         >
           <Image source={podiumIcon} style={styles.actionIcon} />
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={handleNotificationPress}
+        >
+          <View style={styles.notificationIconContainer}>
+            <Image source={notificationIcon} style={styles.actionIcon} />
+            <View style={styles.notificationBadge} />
+          </View>
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.actionButton}
@@ -271,6 +285,20 @@ const styles = StyleSheet.create({
     height: 24,
     tintColor: 'white',
     marginTop: 0,
+  },
+  notificationIconContainer: {
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'red',
+    borderWidth: 1,
+    borderColor: 'black',
   },
 });
 

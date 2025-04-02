@@ -10,9 +10,13 @@ import {
   Dimensions
 } from 'react-native';
 import { colors } from '../utils/theme';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const WINDOW_WIDTH = Dimensions.get('window').width;
-const ANIMATION_DURATION = 250;
+const WINDOW_HEIGHT = Dimensions.get('window').height;
+const ANIMATION_DURATION = 300;
 
 interface CreateOptionsModalProps {
   visible: boolean;
@@ -27,6 +31,7 @@ const CreateOptionsModal: React.FC<CreateOptionsModalProps> = ({
 }) => {
   const slideAnim = React.useRef(new Animated.Value(100)).current;
   const opacityAnim = React.useRef(new Animated.Value(0)).current;
+  const scaleAnim = React.useRef(new Animated.Value(0.95)).current;
   
   React.useEffect(() => {
     if (visible) {
@@ -37,6 +42,11 @@ const CreateOptionsModal: React.FC<CreateOptionsModalProps> = ({
           useNativeDriver: true,
         }),
         Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: ANIMATION_DURATION,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
           toValue: 1,
           duration: ANIMATION_DURATION,
           useNativeDriver: true,
@@ -53,14 +63,18 @@ const CreateOptionsModal: React.FC<CreateOptionsModalProps> = ({
           toValue: 0,
           duration: ANIMATION_DURATION * 0.5,
           useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 0.95,
+          duration: ANIMATION_DURATION * 0.5,
+          useNativeDriver: true,
         })
       ]).start();
     }
-  }, [visible, slideAnim, opacityAnim]);
+  }, [visible, slideAnim, opacityAnim, scaleAnim]);
 
   const handleOptionPress = (option: string) => {
     onSelectOption(option);
-    onClose();
   };
 
   return (
@@ -85,55 +99,77 @@ const CreateOptionsModal: React.FC<CreateOptionsModalProps> = ({
               styles.menuContainer,
               {
                 opacity: opacityAnim,
-                transform: [{ translateY: slideAnim }]
+                transform: [{ translateY: slideAnim }, { scale: scaleAnim }]
               }
             ]}
           >
-            <View style={styles.handle} />
+            <View style={styles.headerContainer}>
+              <View style={styles.handle} />
+              <Text style={styles.headerText}>Create New</Text>
+              <TouchableOpacity style={styles.closeButton} onPress={onClose} hitSlop={{top: 10, right: 10, bottom: 10, left: 10}}>
+                <MaterialIcons name="close" size={22} color="rgba(255,255,255,0.8)" />
+              </TouchableOpacity>
+            </View>
             
-            <View style={styles.optionsRow}>
+            <View style={styles.optionsContainer}>
               <TouchableOpacity 
-                style={styles.optionButton}
+                style={styles.optionCard}
                 onPress={() => handleOptionPress('post')}
                 activeOpacity={0.7}
               >
                 <View style={[styles.optionIcon, { backgroundColor: '#FF5655' }]}>
-                  <Text style={styles.optionIconText}>📝</Text>
+                  <FontAwesome5 name="edit" size={22} color="#fff" solid />
                 </View>
-                <Text style={styles.optionText}>Post</Text>
+                <View style={styles.optionTextContainer}>
+                  <Text style={styles.optionTitle}>Create Post</Text>
+                  <Text style={styles.optionDescription}>Share updates, photos, and more</Text>
+                </View>
+                <MaterialIcons name="arrow-forward-ios" size={16} color="rgba(255,255,255,0.5)" />
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={styles.optionButton}
+                style={styles.optionCard}
                 onPress={() => handleOptionPress('group')}
                 activeOpacity={0.7}
               >
                 <View style={[styles.optionIcon, { backgroundColor: '#4A90E2' }]}>
-                  <Text style={styles.optionIconText}>👥</Text>
+                  <FontAwesome5 name="users" size={22} color="#fff" solid />
                 </View>
-                <Text style={styles.optionText}>Group</Text>
+                <View style={styles.optionTextContainer}>
+                  <Text style={styles.optionTitle}>Create Group</Text>
+                  <Text style={styles.optionDescription}>Connect with people who share interests</Text>
+                </View>
+                <MaterialIcons name="arrow-forward-ios" size={16} color="rgba(255,255,255,0.5)" />
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={styles.optionButton}
+                style={styles.optionCard}
                 onPress={() => handleOptionPress('dynamicGroup')}
                 activeOpacity={0.7}
               >
                 <View style={[styles.optionIcon, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.optionIconText}>🔄</Text>
+                  <FontAwesome5 name="sync-alt" size={22} color="#fff" solid />
                 </View>
-                <Text style={styles.optionText}>Dynamic</Text>
+                <View style={styles.optionTextContainer}>
+                  <Text style={styles.optionTitle}>Dynamic Group</Text>
+                  <Text style={styles.optionDescription}>Create groups with changing members</Text>
+                </View>
+                <MaterialIcons name="arrow-forward-ios" size={16} color="rgba(255,255,255,0.5)" />
               </TouchableOpacity>
               
               <TouchableOpacity 
-                style={styles.optionButton}
+                style={styles.optionCard}
                 onPress={() => handleOptionPress('blog')}
                 activeOpacity={0.7}
               >
                 <View style={[styles.optionIcon, { backgroundColor: '#50C878' }]}>
-                  <Text style={styles.optionIconText}>✍️</Text>
+                  <FontAwesome5 name="book" size={22} color="#fff" solid />
                 </View>
-                <Text style={styles.optionText}>Blog</Text>
+                <View style={styles.optionTextContainer}>
+                  <Text style={styles.optionTitle}>Write Blog</Text>
+                  <Text style={styles.optionDescription}>Share in-depth articles and stories</Text>
+                </View>
+                <MaterialIcons name="arrow-forward-ios" size={16} color="rgba(255,255,255,0.5)" />
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -145,62 +181,103 @@ const CreateOptionsModal: React.FC<CreateOptionsModalProps> = ({
 
 const styles = StyleSheet.create({
   modalContainer: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'flex-end',
     alignItems: 'center',
+    pointerEvents: 'box-none',
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
   },
   menuContainer: {
-    backgroundColor: '#111111',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 16,
-    paddingBottom: 30,
+    backgroundColor: 'rgba(18, 18, 18, 0.92)',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     width: WINDOW_WIDTH,
+    maxHeight: WINDOW_HEIGHT * 0.6,
+    paddingBottom: 16,
+    marginBottom: 60, // Exactly match the height of the bottom navigation
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 15,
+  },
+  headerContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+    position: 'relative',
   },
   handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#666',
-    marginBottom: 20,
+    width: 40,
+    height: 5,
+    borderRadius: 5,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    position: 'absolute',
+    top: 8,
   },
-  optionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-evenly',
+  headerText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  closeButton: {
+    position: 'absolute',
+    right: 16,
+    padding: 8,
+  },
+  optionsContainer: {
     width: '100%',
-    paddingHorizontal: 12,
+    paddingTop: 8,
+    paddingHorizontal: 16,
   },
-  optionButton: {
+  optionCard: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    width: 70,
+    padding: 12,
+    marginVertical: 6,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
   },
   optionIcon: {
-    width: 55,
-    height: 55,
-    borderRadius: 27.5,
+    width: 46,
+    height: 46,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 6,
+    shadowRadius: 6,
+    elevation: 8,
   },
-  optionIconText: {
-    fontSize: 22,
+  optionTextContainer: {
+    flex: 1,
+    marginLeft: 16,
   },
-  optionText: {
-    fontSize: 13,
-    fontWeight: '600',
+  optionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
     color: 'white',
-    textAlign: 'center',
+    marginBottom: 4,
+  },
+  optionDescription: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.6)',
   },
 });
 
