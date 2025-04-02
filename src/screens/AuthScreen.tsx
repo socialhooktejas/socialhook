@@ -11,10 +11,13 @@ import {
   StatusBar,
   Animated,
   Easing,
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { colors, typography, spacing, borderRadius } from '../utils/theme';
+import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const { width, height } = Dimensions.get('window');
 
@@ -23,6 +26,7 @@ type AuthMode = 'signup' | 'login';
 const AuthScreen = () => {
   const navigation = useNavigation();
   const [authMode, setAuthMode] = useState<AuthMode>('signup');
+  const [isChecked, setIsChecked] = useState(false);
   
   // Animations
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -100,6 +104,10 @@ const AuthScreen = () => {
     setAuthMode(authMode === 'signup' ? 'login' : 'signup');
   };
 
+  const toggleCheckbox = () => {
+    setIsChecked(!isChecked);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
@@ -125,13 +133,11 @@ const AuthScreen = () => {
             <View style={styles.header}>
               <Animated.View 
                 style={[
-                  styles.logoContainer,
+                  styles.logo,
                   { transform: [{ scale: logoAnim }] }
                 ]}
               >
-                <View style={styles.logoInner}>
-                  <Text style={styles.logo}>S</Text>
-                </View>
+                <Text style={styles.logoText}>S</Text>
               </Animated.View>
               <Text style={styles.title}>
                 {renderTitle()}
@@ -154,7 +160,7 @@ const AuthScreen = () => {
                   activeOpacity={0.7}
                 >
                   <View style={styles.authOptionIcon}>
-                    <Text style={styles.iconText}>📱</Text>
+                    <MaterialIcons name="smartphone" size={24} color="#555" />
                   </View>
                   <Text style={styles.authOptionText}>Use phone or email</Text>
                 </TouchableOpacity>
@@ -176,7 +182,7 @@ const AuthScreen = () => {
                   activeOpacity={0.7}
                 >
                   <View style={styles.authOptionIcon}>
-                    <Text style={styles.facebookIconText}>f</Text>
+                    <FontAwesome5 name="facebook-f" size={24} color="#ffffff" solid />
                   </View>
                   <Text style={styles.authOptionTextWhite}>Continue with Facebook</Text>
                 </TouchableOpacity>
@@ -192,7 +198,7 @@ const AuthScreen = () => {
                   activeOpacity={0.7}
                 >
                   <View style={styles.authOptionIcon}>
-                    <Text style={styles.iconText}>🍎</Text>
+                    <FontAwesome5 name="apple" size={24} color="#ffffff" solid />
                   </View>
                   <Text style={styles.authOptionTextWhite}>Continue with Apple</Text>
                 </TouchableOpacity>
@@ -208,7 +214,7 @@ const AuthScreen = () => {
                   activeOpacity={0.7}
                 >
                   <View style={[styles.authOptionIcon, styles.googleIcon]}>
-                    <Text style={styles.googleIconText}>G</Text>
+                    <FontAwesome5 name="google" size={20} color="#4285F4" />
                   </View>
                   <Text style={styles.authOptionText}>Continue with Google</Text>
                 </TouchableOpacity>
@@ -216,11 +222,22 @@ const AuthScreen = () => {
             </View>
 
             <View style={styles.footer}>
-              <Text style={styles.termsText}>
-                By continuing, you agree to our{' '}
-                <Text style={styles.termsLink}>Terms</Text> and{' '}
-                <Text style={styles.termsLink}>Privacy Policy</Text>
-              </Text>
+              <View style={styles.checkboxContainer}>
+                <TouchableOpacity 
+                  style={styles.checkbox} 
+                  onPress={toggleCheckbox}
+                  activeOpacity={0.7}
+                >
+                  {isChecked && (
+                    <MaterialIcons name="check" size={16} color="#fff" />
+                  )}
+                </TouchableOpacity>
+                <Text style={styles.termsText}>
+                  By continuing, you agree to our{' '}
+                  <Text style={styles.termsLink}>Terms</Text> and{' '}
+                  <Text style={styles.termsLink}>Privacy Policy</Text>
+                </Text>
+              </View>
 
               <View style={styles.loginPrompt}>
                 <Text style={styles.loginText}>
@@ -265,35 +282,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.medium,
   },
-  logoContainer: {
-    width: Math.min(width * 0.22, 100),
-    height: Math.min(width * 0.22, 100),
-    borderRadius: Math.min(width * 0.11, 50),
-    backgroundColor: 'rgba(255,255,255,0.15)',
+  logo: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.medium,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
   },
-  logoInner: {
-    width: '80%',
-    height: '80%',
-    borderRadius: 1000,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  logo: {
-    fontSize: Math.min(width * 0.12, 48),
+  logoText: {
+    fontSize: 60,
     fontWeight: 'bold',
     color: colors.primary,
     textAlign: 'center',
+    lineHeight: 66,
   },
   title: {
     fontSize: typography.fontSize.xlarge * 1.2,
@@ -401,12 +404,29 @@ const styles = StyleSheet.create({
   footer: {
     justifyContent: 'flex-end',
   },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: spacing.large,
+    paddingHorizontal: spacing.small,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    marginRight: spacing.small,
+    marginTop: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   termsText: {
+    flex: 1,
     fontSize: typography.fontSize.small,
     color: colors.buttonText,
-    textAlign: 'center',
     lineHeight: typography.lineHeight.small * 1.2,
-    marginBottom: spacing.large,
   },
   termsLink: {
     color: colors.buttonText,

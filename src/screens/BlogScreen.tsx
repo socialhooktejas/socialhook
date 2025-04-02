@@ -164,7 +164,7 @@ const BlogScreen = () => {
         setActiveBannerIndex(nextIndex);
       }
     }, 5000); // Slightly longer interval for better user experience
-    
+
     return () => clearInterval(interval);
   }, [activeBannerIndex, width]);
 
@@ -212,8 +212,8 @@ const BlogScreen = () => {
                   </Text>
                   <View style={styles.bannerReadMore}>
                     <Text style={styles.bannerReadMoreText}>Read More</Text>
-                  </View>
-                </View>
+              </View>
+            </View>
               </View>
             </TouchableOpacity>
           )}
@@ -308,7 +308,7 @@ const BlogScreen = () => {
         activeOpacity={0.92}
       >
         <View style={styles.blogPostImageContainer}>
-          <Image source={{ uri: item.image }} style={styles.blogPostImage} />
+        <Image source={{ uri: item.image }} style={styles.blogPostImage} />
           <View style={styles.blogPostImageOverlay} />
           <View style={styles.blogPostCategory}>
             <Text style={styles.blogPostCategoryText}>{item.category || 'Featured'}</Text>
@@ -328,23 +328,23 @@ const BlogScreen = () => {
               {item.isAuthorVerified && (
                 <View style={styles.verifiedBadge}>
                   <Text style={styles.verifiedIcon}>✓</Text>
-                </View>
+            </View>
               )}
             </View>
             
             <View style={styles.blogPostRightSection}>
-              <View style={styles.blogPostViewsContainer}>
-                <Image 
-                  source={require('../assets/icons/search.png')} 
+            <View style={styles.blogPostViewsContainer}>
+              <Image 
+                source={require('../assets/icons/search.png')} 
                   style={styles.viewsIcon} 
-                />
-                <Text style={styles.blogPostViews}>{item.views}</Text>
-              </View>
+              />
+              <Text style={styles.blogPostViews}>{item.views}</Text>
+            </View>
               <TouchableOpacity style={styles.shareButton}>
-                <Image 
+              <Image 
                   source={require('../assets/icons/send.png')} 
                   style={styles.shareIcon} 
-                />
+              />
               </TouchableOpacity>
             </View>
           </View>
@@ -420,7 +420,7 @@ const BlogScreen = () => {
             <TouchableOpacity onPress={() => setFilterModalVisible(false)}>
               <Text style={styles.filterModalClose}>✕</Text>
             </TouchableOpacity>
-          </View>
+        </View>
           
           {/* Categories Filter */}
           <View style={styles.filterSection}>
@@ -453,7 +453,7 @@ const BlogScreen = () => {
                 </TouchableOpacity>
               ))}
             </ScrollView>
-          </View>
+        </View>
           
           {/* Sort By Filter */}
           <View style={styles.filterSection}>
@@ -481,7 +481,7 @@ const BlogScreen = () => {
                   </Text>
                 </TouchableOpacity>
               ))}
-            </View>
+      </View>
           </View>
           
           {/* Read Time Filter */}

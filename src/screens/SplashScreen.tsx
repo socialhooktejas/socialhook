@@ -116,25 +116,24 @@ const SplashScreen = () => {
       </Animated.View>
 
       <View style={styles.content}>
-        <Animated.View
-          style={[
-            styles.logoWrapper,
-            {
-              opacity: logoOpacity,
-              transform: [
-                { scale: logoScale },
-                { rotate: spin }
-              ],
-            },
-          ]}
-        >
-          <Animated.View style={[styles.logoShadow, { opacity: shadowOpacity }]} />
-          <View style={styles.logoContainer}>
-            <View style={styles.logoInner}>
+        <View style={styles.logoSection}>
+          <Animated.View
+            style={[
+              styles.logoWrapper,
+              {
+                opacity: logoOpacity,
+                transform: [
+                  { scale: logoScale },
+                  { rotate: spin }
+                ],
+              },
+            ]}
+          >
+            <View style={styles.logo}>
               <Text style={styles.logoText}>S</Text>
             </View>
-          </View>
-        </Animated.View>
+          </Animated.View>
+        </View>
 
         <Animated.View 
           style={[
@@ -168,8 +167,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: height * 0.25,
-    paddingBottom: height * 0.15,
+    paddingTop: 0,
+    paddingBottom: height * 0.05,
+  },
+  logoSection: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   logoWrapper: {
     alignItems: 'center',
@@ -177,66 +181,48 @@ const styles = StyleSheet.create({
     width: Math.min(width * 0.5, 220),
     height: Math.min(width * 0.5, 220),
   },
-  logoShadow: {
-    position: 'absolute',
+  logo: {
     width: Math.min(width * 0.45, 200),
     height: Math.min(width * 0.45, 200),
     borderRadius: Math.min(width * 0.225, 100),
-    backgroundColor: 'rgba(0,0,0,0.15)',
-    top: 10,
-    transform: [{ scaleX: 0.96 }, { scaleY: 0.9 }],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 15,
-  },
-  logoContainer: {
-    width: Math.min(width * 0.45, 200),
-    height: Math.min(width * 0.45, 200),
-    borderRadius: Math.min(width * 0.225, 100),
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  logoInner: {
-    width: '80%',
-    height: '80%',
-    borderRadius: 1000,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: 'relative',
   },
   logoText: {
-    color: colors.buttonText,
-    fontSize: Math.min(width * 0.2, 100),
+    color: colors.primary,
+    fontSize: Math.min(width * 0.3, 140),
     fontWeight: 'bold',
     includeFontPadding: false,
     textAlign: 'center',
+    lineHeight: Math.min(width * 0.33, 155),
+    textShadowColor: '#000000',
+    textShadowOffset: { width: 1.5, height: 1.5 },
+    textShadowRadius: 1,
+  },
+  logoTextShadow: {
+    display: 'none',
   },
   bottomContainer: {
     alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: spacing.medium,
+    position: 'absolute',
+    bottom: height * 0.05,
   },
   appName: {
-    fontSize: typography.fontSize.xxlarge * 1.5,
-    fontWeight: 'bold',
+    fontSize: typography.fontSize.xlarge * 1.5,
+    fontWeight: '700',
     color: colors.buttonText,
-    letterSpacing: 1,
-    textShadowColor: 'rgba(0, 0, 0, 0.15)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 3,
+    letterSpacing: 0.5,
   },
   tagline: {
-    fontSize: typography.fontSize.medium,
+    fontSize: typography.fontSize.medium * 0.85,
     color: colors.buttonText,
-    marginTop: spacing.small,
-    letterSpacing: 0.8,
-    opacity: 0.85,
+    marginTop: spacing.small / 2,
+    letterSpacing: 0.5,
+    opacity: 0.8,
   },
 });
 

@@ -8,11 +8,16 @@ import {
   Image,
   Animated,
   Pressable,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
+  Platform,
+  ActivityIndicator,
+  FlatList,
+  ScrollView
 } from 'react-native';
 import Video from 'react-native-video';
 import { colors, typography, spacing } from '../utils/theme';
 import { useNavigation } from '@react-navigation/native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const { width, height } = Dimensions.get('window');
 
@@ -29,7 +34,10 @@ const musicIcon = { uri: 'https://img.icons8.com/ios/50/ffffff/musical-notes.png
 export interface ReelItemProps {
   item: {
     id: string;
-    videoUri: any;
+    type: 'video' | 'image' | 'carousel';
+    videoUri?: string;
+    imageUri?: string;
+    carouselImages?: string[];
     user: {
       id: string;
       username: string;
@@ -43,7 +51,7 @@ export interface ReelItemProps {
     music: string;
   };
   isActive: boolean;
-  onError?: (id: string) => void;
+  onError?: (error: any) => void;
 }
 
 const ReelItem: React.FC<ReelItemProps> = ({ item, isActive, onError }) => {
@@ -54,8 +62,14 @@ const ReelItem: React.FC<ReelItemProps> = ({ item, isActive, onError }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [liked, setLiked] = useState(false);
   const [lastTap, setLastTap] = useState<number | null>(null);
+  const [videoLoaded, setVideoLoaded] = useState(false);
   const [videoError, setVideoError] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0);
+  
+  // Animation values for carousel
+  const scrollX = useRef(new Animated.Value(0)).current;
   
   // Animation for like button press
   const likeScale = useRef(new Animated.Value(1)).current;
@@ -66,31 +80,12 @@ const ReelItem: React.FC<ReelItemProps> = ({ item, isActive, onError }) => {
   
   // Reset video state and handle errors when active item changes
   useEffect(() => {
-    // When this item becomes active
     if (isActive) {
-      // Reset error state
-      setVideoError(false);
-      
-      // If there was an error and we haven't exceeded retry limit
-      if (videoError && retryCount < 3) {
-        // Wait a bit and try again
-        setTimeout(() => {
-          setIsPaused(false);
-          setRetryCount(prev => prev + 1);
-        }, 1000);
-      } else if (isActive) {
-        // Add a small delay before playing to ensure proper initialization
-        setIsPaused(true);
-        setTimeout(() => {
-          setIsPaused(false);
-        }, 300);
-      }
+      setIsPaused(false);
     } else {
-      // Reset retry count when item becomes inactive
-      setRetryCount(0);
-      setVideoError(false);
+      setIsPaused(true);
     }
-  }, [isActive, videoError, retryCount]);
+  }, [isActive]);
   
   // Cleanup effect for video
   useEffect(() => {
@@ -99,6 +94,10 @@ const ReelItem: React.FC<ReelItemProps> = ({ item, isActive, onError }) => {
       if (videoRef.current) {
         videoRef.current.seek(0);
       }
+      setVideoLoaded(false);
+      setVideoError(false);
+      setIsLoading(true);
+      setCurrentCarouselIndex(0);
     };
   }, []);
 
@@ -216,60 +215,248 @@ const ReelItem: React.FC<ReelItemProps> = ({ item, isActive, onError }) => {
     return count.toString();
   };
 
+  const renderCarouselContent = () => {
+    const flatListRef = useRef<FlatList>(null);
+    
+    // Update carousel index and scroll to the new position
+    const scrollToImage = (index: number) => {
+      if (flatListRef.current && item.carouselImages && index >= 0 && index < item.carouselImages.length) {
+        flatListRef.current.scrollToIndex({ index, animated: true });
+        setCurrentCarouselIndex(index);
+      }
+    };
+    
+    return (
+      <View style={styles.carouselContainer}>
+        <Animated.FlatList
+          ref={flatListRef}
+          data={item.carouselImages}
+          renderItem={({ item: imageUri, index }) => {
+            const inputRange = [
+              (index - 1) * width,
+              index * width,
+              (index + 1) * width
+            ];
+            
+            // Scale animation
+            const scale = scrollX.interpolate({
+              inputRange,
+              outputRange: [0.95, 1, 0.95],
+              extrapolate: 'clamp'
+            });
+            
+            // Opacity animation
+            const opacity = scrollX.interpolate({
+              inputRange,
+              outputRange: [0.6, 1, 0.6],
+              extrapolate: 'clamp'
+            });
+            
+            return (
+              <View style={styles.carouselItem}>
+                <Animated.View
+                  style={[
+                    styles.carouselImageContainer,
+                    { 
+                      transform: [{ scale }],
+                      opacity 
+                    }
+                  ]}
+                >
+                  <Image
+                    source={{ uri: imageUri }}
+                    style={styles.carouselImage}
+                    resizeMode="cover"
+                    onLoad={() => {
+                      setIsLoading(false);
+                      setVideoLoaded(true);
+                    }}
+                    onError={(error) => {
+                      console.error('Image error:', error);
+                      setVideoError(true);
+                      onError?.(error);
+                    }}
+                  />
+                </Animated.View>
+              </View>
+            );
+          }}
+          keyExtractor={(_, index) => `carousel-${item.id}-${index}`}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+            { useNativeDriver: true }
+          )}
+          onMomentumScrollEnd={(event) => {
+            const newIndex = Math.round(
+              event.nativeEvent.contentOffset.x / width
+            );
+            setCurrentCarouselIndex(newIndex);
+          }}
+          decelerationRate={Platform.OS === 'ios' ? 0.2 : 0.9}
+          snapToInterval={width}
+          snapToAlignment="center"
+          getItemLayout={(_, index) => ({
+            length: width,
+            offset: width * index,
+            index,
+          })}
+          initialScrollIndex={0}
+          scrollEventThrottle={16}
+          bounces={false}
+        />
+        
+        {/* Custom indicators */}
+        <View style={styles.carouselIndicators}>
+          {item.carouselImages?.map((_, index) => {
+            const inputRange = [
+              (index - 1) * width,
+              index * width,
+              (index + 1) * width
+            ];
+            
+            // Opacity animation for indicators
+            const opacity = scrollX.interpolate({
+              inputRange,
+              outputRange: [0.5, 1, 0.5],
+              extrapolate: 'clamp'
+            });
+            
+            // Scale animation for indicators (instead of width)
+            const scale = scrollX.interpolate({
+              inputRange,
+              outputRange: [1, 1.5, 1],
+              extrapolate: 'clamp'
+            });
+            
+            return (
+              <Animated.View
+                key={`indicator-${index}`}
+                style={[
+                  styles.carouselIndicator,
+                  { 
+                    opacity,
+                    transform: [{ scale }]
+                  }
+                ]}
+              />
+            );
+          })}
+        </View>
+        
+        {/* Image counter */}
+        <View style={styles.imageCounter}>
+          <Text style={styles.imageCounterText}>
+            {currentCarouselIndex + 1}/{item.carouselImages?.length}
+          </Text>
+        </View>
+        
+        {/* Add left/right navigation arrows for carousel */}
+        {currentCarouselIndex > 0 && (
+          <TouchableOpacity 
+            style={[styles.carouselNavButton, styles.carouselNavLeft]}
+            onPress={() => scrollToImage(currentCarouselIndex - 1)}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="chevron-left" size={36} color="white" />
+          </TouchableOpacity>
+        )}
+        
+        {item.carouselImages && currentCarouselIndex < item.carouselImages.length - 1 && (
+          <TouchableOpacity 
+            style={[styles.carouselNavButton, styles.carouselNavRight]}
+            onPress={() => scrollToImage(currentCarouselIndex + 1)}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="chevron-right" size={36} color="white" />
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  const renderContent = () => {
+    if (item.type === 'carousel') {
+      return renderCarouselContent();
+    }
+    
+    if (item.type === 'image') {
+      return (
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: item.imageUri }}
+            style={styles.media}
+            resizeMode="cover"
+            onLoad={() => {
+              setIsLoading(false);
+              setVideoLoaded(true);
+            }}
+            onError={(error) => {
+              console.error('Image error:', error);
+              setVideoError(true);
+              onError?.(error);
+            }}
+          />
+        </View>
+      );
+    }
+
+    return (
+      <Video
+        ref={videoRef}
+        source={{ uri: item.videoUri }}
+        style={styles.media}
+        resizeMode="cover"
+        repeat
+        paused={isPaused}
+        muted={false}
+        volume={1.0}
+        onLoad={() => {
+          console.log('Video loaded successfully');
+          setVideoLoaded(true);
+          setIsLoading(false);
+        }}
+        onError={(error) => {
+          console.error('Video error:', error);
+          setVideoError(true);
+          onError?.(error);
+        }}
+        onBuffer={(data) => {
+          console.log('Buffering:', data.isBuffering);
+        }}
+        bufferConfig={{
+          minBufferMs: 15000,
+          maxBufferMs: 50000,
+          bufferForPlaybackMs: 2500,
+          bufferForPlaybackAfterRebufferMs: 5000
+        }}
+        maxBitRate={2000000}
+      />
+    );
+  };
+
   return (
     <View style={styles.container}>
       <TouchableWithoutFeedback style={styles.videoContainer} onPress={handleVideoPress}>
         <View style={styles.videoContainer}>
-          <Video
-            ref={videoRef}
-            source={{ uri: item.videoUri }}
-            style={styles.video}
-            resizeMode="cover"
-            repeat={true}
-            paused={!isActive || isPaused}
-            muted={true}
-            ignoreSilentSwitch="ignore"
-            bufferConfig={{
-              minBufferMs: 1000,
-              maxBufferMs: 5000,
-              bufferForPlaybackMs: 500,
-              bufferForPlaybackAfterRebufferMs: 1000
-            }}
-            reportBandwidth={true}
-            minLoadRetryCount={5}
-            maxBitRate={2000000}
-            onError={(error) => {
-              console.log('Video error:', item.id);
-              setVideoError(true);
-              // Call parent error handler if provided
-              if (onError) {
-                onError(item.id);
-              }
-            }}
-            onLoad={() => {
-              console.log('Video loaded:', item.id);
-              setVideoError(false);
-              if (isActive) {
-                setIsPaused(false);
-              }
-            }}
-            onBuffer={(data) => {
-              // Handle buffering state
-              console.log(`Buffer status for ${item.id}:`, data.isBuffering);
-            }}
-          />
+          {renderContent()}
+          
+          {isLoading && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="white" />
+            </View>
+          )}
           
           {videoError && (
             <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>Video Unavailable</Text>
+              <Text style={styles.errorText}>Unable to load {item.type}</Text>
               <TouchableOpacity 
-                style={styles.retryButton} 
+                style={styles.retryButton}
                 onPress={() => {
                   setVideoError(false);
-                  setRetryCount(prev => prev + 1);
-                  if (videoRef.current) {
-                    videoRef.current.seek(0);
-                  }
+                  setIsLoading(true);
                 }}
               >
                 <Text style={styles.retryText}>Retry</Text>
@@ -277,7 +464,7 @@ const ReelItem: React.FC<ReelItemProps> = ({ item, isActive, onError }) => {
             </View>
           )}
           
-          {isPaused && !videoError && (
+          {isPaused && !videoError && item.type === 'video' && (
             <View style={styles.pauseIconContainer}>
               <Image source={playIcon} style={styles.playIcon} />
             </View>
@@ -324,7 +511,7 @@ const ReelItem: React.FC<ReelItemProps> = ({ item, isActive, onError }) => {
               {item.description}
             </Text>
             <View style={styles.musicContainer}>
-              <Image source={musicIcon} style={styles.musicIconImage} />
+              <MaterialIcons name="music-note" size={16} color="white" style={styles.musicIcon} />
               <Text style={styles.musicText} numberOfLines={1}>
                 {item.music}
               </Text>
@@ -375,7 +562,7 @@ const ReelItem: React.FC<ReelItemProps> = ({ item, isActive, onError }) => {
 const styles = StyleSheet.create({
   container: {
     width,
-    height: height,
+    height,
     backgroundColor: '#000',
     position: 'relative',
   },
@@ -385,13 +572,76 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#000',
   },
-  video: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    bottom: 0,
-    right: 0,
+  media: {
+    width: '100%',
+    height: '100%',
     backgroundColor: '#000',
+  },
+  imageContainer: {
+    width: '100%',
+    height: width * 1.5, // Instagram-like aspect ratio
+    backgroundColor: '#000',
+    alignSelf: 'center',
+    marginTop: (height - width * 1.5) / 2, // Center vertically
+  },
+  carouselContainer: {
+    width,
+    height,
+    backgroundColor: '#000',
+    alignSelf: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  carouselItem: {
+    width,
+    height,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000',
+  },
+  carouselImageContainer: {
+    width: width,
+    height: height,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  carouselImage: {
+    width: width,
+    height: height,
+    backgroundColor: '#000',
+  },
+  imageCounter: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
+  },
+  imageCounterText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  carouselIndicators: {
+    position: 'absolute',
+    bottom: 100,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  carouselIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#fff',
+    marginHorizontal: 4,
   },
   pauseIconContainer: {
     position: 'absolute',
@@ -470,16 +720,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  musicIconImage: {
-    width: 16,
-    height: 16,
-    tintColor: 'white',
-    marginRight: spacing.tiny,
-  },
   musicIcon: {
-    color: 'white',
     marginRight: spacing.tiny,
-    fontSize: typography.fontSize.regular,
   },
   musicText: {
     color: 'white',
@@ -578,6 +820,30 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: typography.fontSize.medium,
     fontWeight: 'bold',
+  },
+  loadingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  carouselNavButton: {
+    position: 'absolute',
+    top: '50%',
+    transform: [{ translateY: -25 }],
+    width: 50,
+    height: 50,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  carouselNavLeft: {
+    left: 10,
+  },
+  carouselNavRight: {
+    right: 10,
   },
 });
 

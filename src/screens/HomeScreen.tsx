@@ -16,45 +16,85 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import ReelItem from '../components/ReelItem';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
+// Helper function to format numbers
+const formatCount = (count: number): string => {
+  if (count >= 1000000) {
+    return (count / 1000000).toFixed(1) + 'M';
+  }
+  if (count >= 1000) {
+    return (count / 1000).toFixed(1) + 'K';
+  }
+  return count.toString();
+};
+
 // Import local icons
 const searchIcon = require('../assets/icons/search.png');
 const podiumIcon = require('../assets/icons/podium.png');
+const musicIcon = require('../assets/icons/music.png');
+const heartIcon = require('../assets/icons/heart.png');
+const chatIcon = require('../assets/icons/chat.png');
+const sendIcon = require('../assets/icons/send.png');
+const moreIcon = require('../assets/icons/more.png');
 
 // Sample data with demo video URLs
 // These videos will be cached when they load for faster subsequent viewing
 const SAMPLE_REELS = [
   {
     id: '1',
+    type: 'video',
     videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
     user: {
-      id: 'user1',
-      username: 'dancequeen',
-      profilePic: 'https://randomuser.me/api/portraits/women/81.jpg',
-      isVerified: true,
+      id: '1',
+      username: 'travel_diary',
+      profilePic: 'https://randomuser.me/api/portraits/women/1.jpg',
+      isVerified: true
     },
-    description: 'Dancing in the neon lights 💃 #dance #neonlights #nightlife',
-    likes: 45600,
-    comments: 892,
-    shares: 210,
-    music: 'Original Sound - Dance Queen',
+    description: 'Exploring the hidden gems of Bali 🌴 #Travel #Adventure',
+    likes: 1234,
+    comments: 89,
+    shares: 45,
+    music: 'Original Sound - Travel Diary'
   },
   {
     id: '2',
-    videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+    type: 'image',
+    imageUri: 'https://i.imgur.com/8tBxTWD.jpg',
     user: {
-      id: 'user2',
-      username: 'familytime',
-      profilePic: 'https://randomuser.me/api/portraits/women/45.jpg',
-      isVerified: false,
+      id: '2',
+      username: 'meme_lord',
+      profilePic: 'https://randomuser.me/api/portraits/men/1.jpg',
+      isVerified: false
     },
-    description: 'Creating Christmas memories with my little one 🎄 #christmas #family #holidays',
-    likes: 15200,
-    comments: 342,
-    shares: 89,
-    music: 'All I Want for Christmas - Mariah Carey',
+    description: 'When you finally fix that bug at 3 AM 😅 #coding #memes #developer',
+    likes: 856,
+    comments: 42,
+    shares: 23,
+    music: 'Original Sound - Meme Lord'
   },
   {
     id: '3',
+    type: 'carousel',
+    carouselImages: [
+      'https://i.imgur.com/pKd7Uva.jpg',
+      'https://i.imgur.com/qGPof5F.jpg',
+      'https://i.imgur.com/0cgwJPZ.jpg',
+      'https://i.imgur.com/CjgYnY3.jpg'
+    ],
+    user: {
+      id: '3',
+      username: 'ui_designer',
+      profilePic: 'https://randomuser.me/api/portraits/women/23.jpg',
+      isVerified: true
+    },
+    description: 'My UI design evolution over 4 years 📱 Swipe to see the progress! Which one do you like best? #uidesign #process #design',
+    likes: 4521,
+    comments: 132,
+    shares: 78,
+    music: 'Original Sound - Design Thoughts'
+  },
+  {
+    id: '4',
+    type: 'video',
     videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     user: {
       id: 'user3',
@@ -69,22 +109,45 @@ const SAMPLE_REELS = [
     music: 'Glitter & Gold - Barnes Courtney',
   },
   {
-    id: '4',
-    videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    id: '5',
+    type: 'image',
+    imageUri: 'https://i.imgur.com/9Yg7vFd.jpg',
     user: {
-      id: 'user4',
-      username: 'urbanvibes',
+      id: '4',
+      username: 'tech_humor',
       profilePic: 'https://randomuser.me/api/portraits/men/36.jpg',
       isVerified: false,
     },
-    description: 'Friday night vibes in the city 🌃 #nightlife #urban #weekend',
+    description: 'My code vs My code after 6 months 😂 #programming #memes #coding',
     likes: 23500,
     comments: 412,
     shares: 98,
-    music: 'Blinding Lights - The Weeknd',
+    music: 'Original Sound - Tech Humor',
   },
   {
-    id: '5',
+    id: '6',
+    type: 'carousel',
+    carouselImages: [
+      'https://i.imgur.com/JHT5ERm.jpg',
+      'https://i.imgur.com/9vTsXvP.jpg',
+      'https://i.imgur.com/YUNsW92.jpg',
+      'https://i.imgur.com/8NwxINw.jpg'
+    ],
+    user: {
+      id: '6',
+      username: 'webdev_tips',
+      profilePic: 'https://randomuser.me/api/portraits/men/45.jpg',
+      isVerified: true
+    },
+    description: '4 CSS tricks every frontend developer should know 💻 Swipe for all tips! #webdev #tips #css #frontend',
+    likes: 12680,
+    comments: 342,
+    shares: 187,
+    music: 'Original Sound - WebDev Community'
+  },
+  {
+    id: '7',
+    type: 'video',
     videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
     user: {
       id: 'user5',
@@ -99,22 +162,45 @@ const SAMPLE_REELS = [
     music: 'Retrowave - Neon Dreams',
   },
   {
-    id: '6',
-    videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    id: '8',
+    type: 'carousel',
+    carouselImages: [
+      'https://i.imgur.com/NXy5dBP.jpg',
+      'https://i.imgur.com/YrOJJBM.jpg',
+      'https://i.imgur.com/xNQroVl.jpg',
+      'https://i.imgur.com/KzmtRAs.jpg'
+    ],
     user: {
-      id: 'user6',
-      username: 'streetlife',
+      id: '8',
+      username: 'coding_journey',
+      profilePic: 'https://randomuser.me/api/portraits/women/42.jpg',
+      isVerified: false
+    },
+    description: 'My desk setup evolution from beginner to pro developer 🖥️ Swipe to see all phases! Which one is your favorite? #workspace #programming #setup',
+    likes: 34560,
+    comments: 678,
+    shares: 230,
+    music: 'Original Sound - Tech Life'
+  },
+  {
+    id: '9',
+    type: 'image',
+    imageUri: 'https://i.imgur.com/3XZQZ9Y.jpg',
+    user: {
+      id: '9',
+      username: 'dev_jokes',
       profilePic: 'https://randomuser.me/api/portraits/men/42.jpg',
       isVerified: true,
     },
-    description: 'Street photography tour downtown 📸 #photography #urban #streetlife',
+    description: 'When the client says "make it pop" 🎨 #design #memes #developer',
     likes: 32700,
     comments: 456,
     shares: 213,
-    music: 'City Lights - Electronic Dreams',
+    music: 'Original Sound - Dev Jokes',
   },
   {
-    id: '7',
+    id: '10',
+    type: 'video',
     videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
     user: {
       id: 'user7',
@@ -129,49 +215,41 @@ const SAMPLE_REELS = [
     music: 'Adventure - John Smith',
   },
   {
-    id: '8',
-    videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    id: '11',
+    type: 'carousel',
+    carouselImages: [
+      'https://i.imgur.com/xELwDTv.jpg',
+      'https://i.imgur.com/uA6Sxwo.jpg',
+      'https://i.imgur.com/dBWNPQk.jpg',
+      'https://i.imgur.com/vvGjUSE.jpg'
+    ],
     user: {
-      id: 'user8',
-      username: 'fitness_guru',
+      id: '11',
+      username: 'mobile_dev',
+      profilePic: 'https://randomuser.me/api/portraits/men/56.jpg',
+      isVerified: true
+    },
+    description: 'React Native vs Flutter - Pros & Cons comparison 📊 Swipe through to see my analysis! Which do you prefer? #reactnative #flutter #mobiledev',
+    likes: 56789,
+    comments: 1254,
+    shares: 842,
+    music: 'Original Sound - Tech Talk'
+  },
+  {
+    id: '12',
+    type: 'image',
+    imageUri: 'https://i.imgur.com/7XZQZ9Y.jpg',
+    user: {
+      id: '12',
+      username: 'code_memes',
       profilePic: 'https://randomuser.me/api/portraits/men/22.jpg',
       isVerified: true,
     },
-    description: 'Quick 5-minute home workout 💪 #fitness #workout #motivation',
+    description: 'When you find a bug in production 😱 #coding #memes #developer',
     likes: 89100,
     comments: 1423,
     shares: 732,
-    music: 'Pump It Up - Workout Mix',
-  },
-  {
-    id: '9',
-    videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
-    user: {
-      id: 'user9',
-      username: 'food_lover',
-      profilePic: 'https://randomuser.me/api/portraits/women/33.jpg',
-      isVerified: false,
-    },
-    description: 'Easy 15-minute pasta recipe 🍝 #cooking #food #recipe',
-    likes: 76300,
-    comments: 982,
-    shares: 543,
-    music: 'Kitchen Vibes - Cooking Songs',
-  },
-  {
-    id: '10',
-    videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
-    user: {
-      id: 'user10',
-      username: 'pet_paradise',
-      profilePic: 'https://randomuser.me/api/portraits/women/91.jpg',
-      isVerified: true,
-    },
-    description: 'My dog learning a new trick 🐕 #pets #dogs #cute',
-    likes: 123400,
-    comments: 2341,
-    shares: 987,
-    music: 'Happy Days - Pet Lovers',
+    music: 'Original Sound - Code Memes',
   }
 ];
 
@@ -268,21 +346,26 @@ const HomeScreen = () => {
     setLoadingError(true);
   };
   
+  const renderItem = ({ item, index }: { item: any; index: number }) => {
+    const isVisible = index === activeIndex;
+    return (
+      <ReelItem
+        item={item}
+        isActive={isVisible}
+        onError={handleItemError}
+      />
+    );
+  };
+  
   return (
     <View style={styles.container}>
       <FlatList
         data={SAMPLE_REELS}
-        renderItem={({ item, index }) => (
-          <ReelItem 
-            item={item} 
-            isActive={index === activeIndex}
-            onError={() => handleItemError(item.id)}
-          />
-        )}
+        renderItem={renderItem}
         keyExtractor={item => item.id}
         pagingEnabled
         snapToAlignment="start"
-        decelerationRate={0.9}
+        decelerationRate="fast"
         viewabilityConfig={viewabilityConfig}
         onViewableItemsChanged={onViewableItemsChanged}
         showsVerticalScrollIndicator={false}
@@ -297,6 +380,11 @@ const HomeScreen = () => {
         maintainVisibleContentPosition={{
           minIndexForVisible: 0,
         }}
+        getItemLayout={(data, index) => ({
+          length: Dimensions.get('window').height,
+          offset: Dimensions.get('window').height * index,
+          index,
+        })}
       />
       
       {/* Header overlay */}
@@ -391,6 +479,105 @@ const styles = StyleSheet.create({
     backgroundColor: 'red',
     borderWidth: 1,
     borderColor: 'black',
+  },
+  reelContainer: {
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').height,
+    backgroundColor: '#000',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#000',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
+  bottomSection: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    padding: 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+  },
+  bottomLeftSection: {
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  userInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  profilePic: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: 10,
+  },
+  username: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  verifiedBadge: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 5,
+  },
+  description: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  musicContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  musicIcon: {
+    marginRight: 5,
+  },
+  musicText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionIconImage: {
+    width: 20,
+    height: 20,
+    tintColor: 'white',
+    marginLeft: 10,
+  },
+  actionCount: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  menuIconContainer: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  menuIconImage: {
+    width: 20,
+    height: 20,
+    tintColor: 'white',
   },
 });
 
