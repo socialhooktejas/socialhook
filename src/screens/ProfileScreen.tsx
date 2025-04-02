@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../utils/theme';
+import LinearGradient from 'react-native-linear-gradient';
 
 // Icons
 const backIcon = require('../assets/icons/back.png');
@@ -31,6 +32,7 @@ const followIcon = require('../assets/icons/user.png');
 const playIcon = require('../assets/icons/play.png');
 const bookmarkIcon = require('../assets/icons/bookmark.png');
 const tagIcon = require('../assets/icons/at.png');
+const earningsIcon = require('../assets/icons/coin.png');
 
 const { width } = Dimensions.get('window');
 
@@ -255,6 +257,11 @@ const ProfileScreen = () => {
     setIsFollowing(!isFollowing);
   };
 
+  // Handle navigation to earnings hub
+  const handleEarningsPress = () => {
+    navigation.navigate('EarningsHubScreen');
+  };
+
   const renderHeader = () => (
     <>
       {/* Animated header for scroll effect */}
@@ -296,7 +303,7 @@ const ProfileScreen = () => {
 
   const renderProfileInfo = () => (
     <View style={styles.profileInfoContainer}>
-      <View style={styles.profileHeader}>
+      <View style={styles.profileRow}>
         <View style={styles.avatarContainer}>
           <Image source={{ uri: PROFILE_DATA.avatar }} style={styles.avatar} />
           {PROFILE_DATA.isLive && (
@@ -366,6 +373,22 @@ const ProfileScreen = () => {
           <Image source={followIcon} style={styles.followIcon} />
         </TouchableOpacity>
       </View>
+      
+      {/* Creator Earnings Button */}
+      <TouchableOpacity 
+        style={styles.earningsButtonContainer}
+        onPress={handleEarningsPress}
+      >
+        <LinearGradient
+          colors={['#4A00E0', '#8E2DE2']}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 0}}
+          style={styles.earningsButton}
+        >
+          <Image source={earningsIcon} style={styles.earningsIcon} />
+          <Text style={styles.earningsButtonText}>Creator Earnings</Text>
+        </LinearGradient>
+      </TouchableOpacity>
 
       <View style={styles.highlightsWrapper}>
         <ScrollView 
@@ -606,7 +629,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 0,
   },
-  profileHeader: {
+  profileRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
@@ -944,6 +967,33 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     tintColor: '#333',
+  },
+  earningsButtonContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  earningsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 8,
+    elevation: 3,
+    shadowColor: '#4A00E0',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  earningsIcon: {
+    width: 18,
+    height: 18,
+    marginRight: 8,
+    tintColor: 'white',
+  },
+  earningsButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
 

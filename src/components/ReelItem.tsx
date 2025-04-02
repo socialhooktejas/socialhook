@@ -98,9 +98,54 @@ const ReelItem: React.FC<ReelItemProps> = ({ item, isActive, onError }) => {
       setVideoError(false);
       setIsLoading(true);
       setCurrentCarouselIndex(0);
+      // Force pause when unmounting
+      setIsPaused(true);
     };
   }, []);
 
+  // Handle app state changes to pause video when app goes to background
+  useEffect(() => {
+    // Import AppState at the top of the file
+    import('react-native').then(({ AppState }) => {
+      const handleAppStateChange = (nextAppState: string) => {
+        if (nextAppState.match(/inactive|background/)) {
+          // App is going to background or inactive, pause video
+          setIsPaused(true);
+        }
+      };
+
+      const subscription = AppState.addEventListener('change', handleAppStateChange);
+      
+      return () => {
+        subscription.remove();
+      };
+    }).catch(err => console.error('Failed to import AppState:', err));
+  }, []);
+
+  // Handle focus/blur events from navigation to ensure videos pause when navigating away
+  useEffect(() => {
+    const unsubscribeFocus = navigation.addListener('focus', () => {
+      // Only play if this reel is the active one
+      if (isActive) {
+        setIsPaused(false);
+      }
+    });
+
+    const unsubscribeBlur = navigation.addListener('blur', () => {
+      // Always pause when navigating away
+      setIsPaused(true);
+      if (videoRef.current) {
+        // Ensure the video is fully paused by calling pause() directly
+        videoRef.current.seek(0);
+      }
+    });
+
+    return () => {
+      unsubscribeFocus();
+      unsubscribeBlur();
+    };
+  }, [navigation, isActive]);
+  
   // Handle unmounting and remounting video component
   useEffect(() => {
     if (!isActive) {
@@ -108,8 +153,17 @@ const ReelItem: React.FC<ReelItemProps> = ({ item, isActive, onError }) => {
       setVideoError(false);
       setRetryCount(0);
       setIsPaused(true);
+      
+      // Ensure video is fully stopped when not visible
+      if (videoRef.current && item.type === 'video') {
+        try {
+          videoRef.current.seek(0);
+        } catch (e) {
+          console.warn('Error seeking video:', e);
+        }
+      }
     }
-  }, [isActive]);
+  }, [isActive, item?.type]);
   
   const handleVideoPress = useCallback(() => {
     // Handle double tap to like

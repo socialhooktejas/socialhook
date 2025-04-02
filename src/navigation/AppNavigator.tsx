@@ -27,6 +27,7 @@ import RedirectScreen from '../screens/RedirectScreen';
 import UnifiedReelsStream from '../screens/UnifiedReelsStream';
 import WithdrawScreen from '../screens/WithdrawScreen';
 import NotificationScreen from '../screens/NotificationScreen';
+import EarningsHubScreen from '../screens/EarningsHubScreen';
 
 // Import icons
 const homeIcon = require('../assets/icons/homepage.png');
@@ -57,6 +58,7 @@ export type RootStackParamList = {
   ExploreScreen: { focusSearch?: boolean };
   UnifiedReelsStream: undefined;
   WithdrawScreen: undefined;
+  EarningsHubScreen: undefined;
   NotificationScreen: undefined;
 };
 
@@ -254,6 +256,7 @@ const AppNavigator = () => {
           <Stack.Screen name="Interests" component={InterestsScreen} />
           <Stack.Screen name="Main" component={MainTabNavigator} />
           <Stack.Screen name="CreatePost" component={CreatePostScreen} />
+          <Stack.Screen name="GroupScreen" component={GroupScreen} />
           <Stack.Screen name="DynamicGroupScreen" component={DynamicGroupScreen} />
           <Stack.Screen 
             name="CommentsScreen" 
@@ -281,6 +284,7 @@ const AppNavigator = () => {
           />
           <Stack.Screen name="UnifiedReelsStream" component={UnifiedReelsStream} />
           <Stack.Screen name="WithdrawScreen" component={WithdrawScreen} />
+          <Stack.Screen name="EarningsHubScreen" component={EarningsHubScreen} />
           <Stack.Screen name="NotificationScreen" component={NotificationScreen} />
        </Stack.Navigator>
      </NavigationContainer>

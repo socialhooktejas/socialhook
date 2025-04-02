@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -9,26 +9,16 @@ import {
   Image, 
   StatusBar,
   Dimensions,
-  TextInput,
   FlatList,
   Platform,
   ActivityIndicator,
   RefreshControl,
   ListRenderItemInfo,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
 } from 'react-native';
 import { colors } from '../utils/theme';
 import { useNavigation } from '@react-navigation/native';
-
-type RootStackParamList = {
-  DynamicGroupScreen: {
-    groupId: string;
-    groupName: string;
-    debateTopic: string;
-    debateType: string;
-  };
-};
+import LinearGradient from 'react-native-linear-gradient';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 interface RouteParams {
   groupId?: string;
@@ -56,6 +46,7 @@ interface Post {
   likes: string;
   comments: string;
   shares: string;
+  debateTopic?: string;
 }
 
 const { width } = Dimensions.get('window');
@@ -79,72 +70,73 @@ const initialPosts: Post[] = [
   {
     id: '1',
     author: {
-      name: 'Priya Patel',
-      avatar: 'https://source.unsplash.com/random/100x100/?portrait,woman',
+      name: 'cricket_lover',
+      avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
       verified: true,
-      timeAgo: '4h ago'
+      timeAgo: '2h ago'
     },
-    content: "Kohli's consistency across all formats is just unreal! 71 international centuries and counting... 👑",
-    image: 'https://source.unsplash.com/random/600x600/?cricket,kohli',
-    likes: '3.1K',
-    comments: '456',
-    shares: '189',
+    content: 'Who do you think is the GOAT (Greatest Of All Time) in cricket? Is it Virat Kohli or MS Dhoni?',
+    image: 'https://images.pexels.com/photos/3628912/pexels-photo-3628912.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    likes: '1.5K',
+    comments: '350',
+    shares: '120',
+    debateTopic: 'Cricket GOAT Debate'
   },
   {
     id: '2',
     author: {
-      name: 'Rahul Sharma',
-      avatar: 'https://source.unsplash.com/random/100x100/?portrait,man',
+      name: 'jane_smith',
+      avatar: 'https://randomuser.me/api/portraits/women/44.jpg',
       verified: true,
-      timeAgo: '2h ago'
+      timeAgo: '3h ago'
     },
-    content: "That last-ball six by Dhoni in the World Cup final will forever be etched in cricket history! 🏆 What a moment!",
-    image: 'https://source.unsplash.com/random/600x600/?cricket,dhoni',
-    likes: '2.4K',
-    comments: '342',
-    shares: '124',
+    content: 'Just watched an amazing match! The energy in the stadium was incredible. What a nail-biter finish!',
+    image: 'https://images.pexels.com/photos/2464152/pexels-photo-2464152.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    likes: '982',
+    comments: '456',
+    shares: '189'
   },
   {
     id: '3',
     author: {
       name: 'Aditya Singh',
-      avatar: 'https://source.unsplash.com/random/100x100/?portrait,indian',
+      avatar: 'https://randomuser.me/api/portraits/men/67.jpg',
       verified: false,
       timeAgo: '6h ago'
     },
-    content: "Just witnessed an incredible innings at the IPL! Cricket truly is a religion here in India. 🏏",
-    image: 'https://source.unsplash.com/random/600x600/?cricket,stadium',
+    content: "The new generation of Indian cricketers is so promising. Future looks bright! 🇮🇳",
+    image: 'https://images.pexels.com/photos/3621104/pexels-photo-3621104.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
     likes: '1.8K',
     comments: '257',
-    shares: '98',
+    shares: '98'
   },
   {
     id: '4',
     author: {
       name: 'Sarah Williams',
-      avatar: 'https://source.unsplash.com/random/100x100/?portrait,girl',
+      avatar: 'https://randomuser.me/api/portraits/women/22.jpg',
       verified: true,
       timeAgo: '8h ago'
     },
-    content: "The atmosphere at today's match was electric! Nothing beats watching cricket live at the stadium 🎉",
-    image: 'https://source.unsplash.com/random/600x600/?cricket,crowd',
+    content: "What's everyone's prediction for the upcoming T20 World Cup? I think India has the strongest squad this year!",
+    image: 'https://images.pexels.com/photos/163452/cricket-cricket-player-batting-ball-163452.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
     likes: '4.2K',
     comments: '521',
-    shares: '203',
+    shares: '203'
   },
   {
     id: '5',
     author: {
       name: 'Rajesh Kumar',
-      avatar: 'https://source.unsplash.com/random/100x100/?portrait,indian,man',
+      avatar: 'https://randomuser.me/api/portraits/men/45.jpg',
       verified: true,
       timeAgo: '12h ago'
     },
-    content: "What a match-winning performance! The future of Indian cricket looks bright 🌟",
-    image: 'https://source.unsplash.com/random/600x600/?cricket,celebration',
+    content: "Best cricket stadiums in the world? My pick is MCG, followed by Lords and Eden Gardens. What's yours?",
+    image: 'https://images.pexels.com/photos/69773/cricket-children-playing-park-69773.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
     likes: '5.7K',
     comments: '678',
-    shares: '345',
+    shares: '345'
   }
 ];
 
@@ -153,71 +145,71 @@ const additionalPosts: Post[] = [
     id: '6',
     author: {
       name: 'Amit Patel',
-      avatar: 'https://source.unsplash.com/random/100x100/?portrait,indian,boy',
+      avatar: 'https://randomuser.me/api/portraits/men/36.jpg',
       verified: true,
       timeAgo: '1d ago'
     },
-    content: "Can't wait for the next big tournament! The energy in cricket is unmatched 🏏✨",
-    image: 'https://source.unsplash.com/random/600x600/?cricket,tournament',
+    content: "Anyone following the Women's Cricket League? Some absolutely stunning performances this season!",
+    image: 'https://images.pexels.com/photos/3755761/pexels-photo-3755761.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
     likes: '6.1K',
     comments: '892',
-    shares: '445',
+    shares: '445'
   },
   {
     id: '7',
     author: {
       name: 'Meera Shah',
-      avatar: 'https://source.unsplash.com/random/100x100/?portrait,indian,woman',
+      avatar: 'https://randomuser.me/api/portraits/women/33.jpg',
       verified: false,
       timeAgo: '1d ago'
     },
-    content: "Historic moment for women's cricket! Breaking barriers and setting new records 💪",
-    image: 'https://source.unsplash.com/random/600x600/?cricket,women',
+    content: "Just bought tickets for the India vs. Australia series. Can't wait to witness this epic rivalry live!",
+    image: 'https://images.pexels.com/photos/411207/pexels-photo-411207.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
     likes: '8.3K',
     comments: '1.2K',
-    shares: '678',
+    shares: '678'
   },
   {
     id: '8',
     author: {
       name: 'Karthik Rajan',
-      avatar: 'https://source.unsplash.com/random/100x100/?portrait,south,indian',
+      avatar: 'https://randomuser.me/api/portraits/men/55.jpg',
       verified: true,
       timeAgo: '2d ago'
     },
-    content: "The art of spin bowling - pure magic on the field! 🎯",
-    image: 'https://source.unsplash.com/random/600x600/?cricket,bowling',
+    content: "Top 5 cricket moments that gave you goosebumps? Mine would start with Dhoni's World Cup winning six!",
+    image: 'https://images.pexels.com/photos/3621613/pexels-photo-3621613.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
     likes: '4.5K',
     comments: '567',
-    shares: '234',
+    shares: '234'
   },
   {
     id: '9',
     author: {
       name: 'Neha Sharma',
-      avatar: 'https://source.unsplash.com/random/100x100/?portrait,girl,indian',
+      avatar: 'https://randomuser.me/api/portraits/women/48.jpg',
       verified: true,
       timeAgo: '2d ago'
     },
-    content: "From gully cricket to international stadiums - the journey of dreams! 🌟",
-    image: 'https://source.unsplash.com/random/600x600/?cricket,street',
+    content: "The evolution of cricket gear over the decades is fascinating. From minimal protection to high-tech equipment!",
+    image: 'https://images.pexels.com/photos/1432039/pexels-photo-1432039.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
     likes: '7.2K',
     comments: '934',
-    shares: '512',
+    shares: '512'
   },
   {
     id: '10',
     author: {
       name: 'Rohan Kapoor',
-      avatar: 'https://source.unsplash.com/random/100x100/?portrait,boy,indian',
+      avatar: 'https://randomuser.me/api/portraits/men/62.jpg',
       verified: false,
       timeAgo: '3d ago'
     },
-    content: "The perfect cover drive - poetry in motion! 🏏✨",
-    image: 'https://source.unsplash.com/random/600x600/?cricket,batting',
+    content: "Best cricket commentary moments? Tony Greig's 'They're dancing in the aisles in Sharjah' is my absolute favorite!",
+    image: 'https://images.pexels.com/photos/4667954/pexels-photo-4667954.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
     likes: '5.9K',
     comments: '723',
-    shares: '389',
+    shares: '389'
   }
 ];
 
@@ -245,10 +237,71 @@ const groupDetails = {
 const GroupScreen = ({ route }: { route: { params?: RouteParams } }) => {
   const navigation = useNavigation();
   const [activeTab, setActiveTab] = useState('posts');
-  const [commentText, setCommentText] = useState('');
+  const [_commentText, _setCommentText] = useState('');
   const [posts, setPosts] = useState<Post[]>(initialPosts);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [countdown, setCountdown] = useState({
+    hours: 2,
+    minutes: 45,
+    seconds: 0
+  });
+  
+  // Create a simpler image cache tracking
+  const [_cachedImages, setCachedImages] = useState<{[key: string]: boolean}>({});
+  const cachedImagesRef = React.useRef<{[key: string]: boolean}>({});
+  
+  // Simpler preload approach - just mark images as loaded
+  useEffect(() => {
+    const imagesToCache = posts.map(post => post.image);
+    
+    // Avoid multiple fetches by marking them as cached
+    const newCachedState = {...cachedImagesRef.current};
+    imagesToCache.forEach(img => {
+      newCachedState[img] = true;
+    });
+    
+    cachedImagesRef.current = newCachedState;
+    setCachedImages(newCachedState);
+  }, [posts]); // Only depend on posts, not on cachedImages
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown(prevTime => {
+        let { hours, minutes, seconds } = prevTime;
+        
+        if (seconds > 0) {
+          seconds -= 1;
+        } else {
+          if (minutes > 0) {
+            minutes -= 1;
+            seconds = 59;
+          } else {
+            if (hours > 0) {
+              hours -= 1;
+              minutes = 59;
+              seconds = 59;
+            } else {
+              clearInterval(timer);
+            }
+          }
+        }
+        
+        return { hours, minutes, seconds };
+      });
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
+  
+  const formatCountdown = useCallback(() => {
+    const { hours, minutes, seconds } = countdown;
+    const formattedHours = hours < 10 ? `0${hours}` : hours;
+    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+    const formattedSeconds = seconds < 10 ? `0${seconds}` : seconds;
+    
+    return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+  }, [countdown]);
   
   const tabs = ['posts', 'about', 'members', 'media'];
   
@@ -256,7 +309,7 @@ const GroupScreen = ({ route }: { route: { params?: RouteParams } }) => {
     navigation.goBack();
   };
   
-  const handlePollClick = () => {
+  const handlePollClick = useCallback(() => {
     // Use a more appropriate method to navigate without type errors
     const params = {
       groupId: route.params?.groupId || '1',
@@ -267,7 +320,7 @@ const GroupScreen = ({ route }: { route: { params?: RouteParams } }) => {
     
     // @ts-ignore - Ignoring type check for navigation to allow for mixed navigation structure
     navigation.navigate('DynamicGroupScreen', params);
-  };
+  }, [navigation, route.params?.groupId]);
   
   const loadMorePosts = useCallback(() => {
     if (loading) return;
@@ -275,188 +328,321 @@ const GroupScreen = ({ route }: { route: { params?: RouteParams } }) => {
     
     // Simulate API call
     setTimeout(() => {
-      setPosts(currentPosts => [...currentPosts, ...additionalPosts]);
+      // Check if we already loaded additional posts to prevent duplication
+      if (posts.length <= initialPosts.length) {
+        setPosts(currentPosts => [...currentPosts, ...additionalPosts]);
+      }
       setLoading(false);
     }, 1500);
-  }, [loading]);
+  }, [loading, posts.length]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    // Simulate refresh
+    // Simulate refresh - reset to initial posts only
     setTimeout(() => {
-      setPosts(initialPosts);
+      setPosts([...initialPosts]);
       setRefreshing(false);
     }, 1500);
   }, []);
 
-  const renderPost = useCallback(({ item }: ListRenderItemInfo<Post>) => (
-    <View style={styles.postContainer}>
-      <View style={styles.postHeader}>
-        <View style={styles.postHeaderLeft}>
-          <Image source={{ uri: item.author.avatar }} style={styles.postAvatar} />
-          <View style={styles.postHeaderInfo}>
-            <View style={styles.postAuthorRow}>
-              <Text style={styles.postAuthorName}>{item.author.name}</Text>
-              {item.author.verified && (
-                <View style={styles.verifiedBadge}>
-                  <Text style={styles.verifiedText}>✓</Text>
-                </View>
-              )}
+  // Create separate component for post item to use useState inside
+  const PostItem = React.memo(({ item, index }: { item: Post; index: number }) => {
+    // Simplified loading state - just loading, no animations
+    const [isLoading, setIsLoading] = useState(false);
+    
+    // Get static image fallback for unreliable images
+    const getImageSource = () => {
+      if (index === 3) {
+        return {uri: 'https://images.pexels.com/photos/209977/pexels-photo-209977.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'};
+      }
+      if (index === 4) {
+        return {uri: 'https://images.pexels.com/photos/3628914/pexels-photo-3628914.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'};
+      }
+      return {uri: item.image};
+    };
+    
+    return (
+      <View style={[
+        styles.postContainer, 
+        index % 2 === 0 && styles.evenPost
+      ]}>
+        <View style={styles.postHeader}>
+          <View style={styles.postHeaderLeft}>
+            <Image 
+              source={{ uri: item.author.avatar }} 
+              style={styles.postAvatar} 
+              defaultSource={require('../assets/icons/profile.png')}
+            />
+            <View style={styles.postHeaderInfo}>
+              <View style={styles.postAuthorRow}>
+                <Text style={styles.postAuthorName}>{item.author.name}</Text>
+                {item.author.verified && (
+                  <View style={styles.verifiedBadge}>
+                    <Text style={styles.verifiedText}>✓</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.postTime}>{item.author.timeAgo}</Text>
             </View>
-            <Text style={styles.postTime}>{item.author.timeAgo}</Text>
           </View>
+          <TouchableOpacity style={styles.postMoreButton}>
+            <MaterialIcons name="more-vert" size={20} color="#262626" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.postMoreButton}>
+
+        <View style={styles.postImageContainer}>
+          <Image 
+            source={getImageSource()} 
+            style={styles.postImage}
+            resizeMode="cover"
+            onLoadStart={() => setIsLoading(true)}
+            onLoad={() => setIsLoading(false)}
+            onError={() => setIsLoading(false)}
+          />
+          {isLoading && (
+            <View style={styles.imageLoading}>
+              <ActivityIndicator color="#3F51B5" size="small" />
+            </View>
+          )}
+        </View>
+
+        <View style={styles.postActions}>
+          <View style={styles.postActionsLeft}>
+            <TouchableOpacity style={styles.postAction}>
+              <MaterialIcons name="favorite-border" size={24} color="#262626" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.postAction}>
+              <MaterialIcons name="chat-bubble-outline" size={22} color="#262626" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.postAction}>
+              <MaterialIcons name="send" size={22} color="#262626" />
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity style={styles.postAction}>
+            <MaterialIcons name="bookmark-border" size={24} color="#262626" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.postEngagement}>
+          <Text style={styles.likesText}>{item.likes} likes</Text>
+        </View>
+
+        <View style={styles.postCaption}>
+          <Text style={styles.captionText}>
+            <Text style={styles.captionUsername}>{item.author.name}</Text>{' '}
+            {item.content}
+          </Text>
+        </View>
+
+        <TouchableOpacity style={styles.commentsButton}>
+          <Text style={styles.commentsText}>
+            View all {item.comments} comments
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  });
+  
+  // Simple render function that doesn't need useCallback
+  const renderPost = ({ item, index }: ListRenderItemInfo<Post>) => {
+    return <PostItem item={item} index={index} />;
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      
+      {/* Header */}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+          <Image 
+            source={require('../assets/icons/back.png')} 
+            style={styles.backIcon} 
+          />
+        </TouchableOpacity>
+        <View style={styles.headerTitleContainer}>
+          <View style={styles.titleRow}>
+            <Text style={styles.headerTitle}>{groupDetails.name}</Text>
+            <View style={styles.trendingContainer}>
+              <Text style={styles.headerSubtitle}>{groupDetails.trending}</Text>
+            </View>
+          </View>
+          <Text style={styles.groupStats}>{groupDetails.members} • {groupDetails.posts}</Text>
+        </View>
+        <TouchableOpacity style={styles.menuButton}>
           <Image 
             source={require('../assets/icons/more.png')} 
-            style={styles.postMoreIcon} 
+            style={styles.menuButtonIcon} 
           />
         </TouchableOpacity>
       </View>
 
-      <Image 
-        source={{ uri: item.image }} 
-        style={styles.postImage}
-        resizeMode="cover"
-      />
-
-      <View style={styles.postActions}>
-        <View style={styles.postActionsLeft}>
-          <TouchableOpacity style={styles.postAction}>
-            <Image 
-              source={require('../assets/icons/heart.png')} 
-              style={styles.actionIcon} 
-            />
+      {/* Tab navigation - outside scrollable content */}
+      <View style={styles.tabsContainer}>
+        {tabs.map((tab) => (
+          <TouchableOpacity 
+            key={`tab-${tab}`}
+            style={[styles.tab, activeTab === tab && styles.activeTab]} 
+            onPress={() => setActiveTab(tab)}
+          >
+            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </Text>
+            {activeTab === tab && (
+              <View style={styles.tabIndicator} />
+            )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.postAction}>
-            <Image 
-              source={require('../assets/icons/chat.png')} 
-              style={styles.actionIcon} 
-            />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.postAction}>
-            <Image 
-              source={require('../assets/icons/send.png')} 
-              style={styles.actionIcon} 
-            />
-          </TouchableOpacity>
-        </View>
+        ))}
       </View>
 
-      <View style={styles.postEngagement}>
-        <Text style={styles.likesText}>{item.likes} likes</Text>
-      </View>
-
-      <View style={styles.postCaption}>
-        <Text style={styles.captionText}>
-          <Text style={styles.captionUsername}>{item.author.name}</Text>{' '}
-          {item.content}
-        </Text>
-      </View>
-
-      <TouchableOpacity style={styles.commentsButton}>
-        <Text style={styles.commentsText}>
-          View all {item.comments} comments
-        </Text>
-      </TouchableOpacity>
-    </View>
-  ), []);
-
-  // Render tab content based on active tab
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'posts':
-  return (
-            <FlatList
-              data={posts}
-              renderItem={renderPost}
+      {/* Main content area */}
+      <View style={styles.mainContainer}>
+        {/* Render the "Posts" tab with FlatList */}
+        {activeTab === 'posts' && (
+          <FlatList
+            data={posts}
+            renderItem={renderPost}
             keyExtractor={(item) => `post-${item.id}`}
-              showsVerticalScrollIndicator={false}
-              onEndReached={loadMorePosts}
-              onEndReachedThreshold={0.5}
-              refreshControl={
-                <RefreshControl
-                  refreshing={refreshing}
-                  onRefresh={onRefresh}
-                  tintColor="#1A1B35"
-                />
-              }
-            onScroll={(_event: NativeSyntheticEvent<NativeScrollEvent>) => { /* empty function */ }}
-            scrollEventThrottle={16}
-              ListHeaderComponent={() => (
-                <>
-                {/* Dynamic Group Poll - Only component in header now */}
-                  <View style={styles.dynamicGroupContainer}>
-                    <TouchableOpacity 
-                      style={styles.pollContainer}
-                      activeOpacity={0.9}
-                      onPress={handlePollClick}
-                    >
-                    <View style={styles.dynamicGroupTag}>
-                      <Text style={styles.dynamicGroupTagText}>DYNAMIC GROUP</Text>
+            showsVerticalScrollIndicator={false}
+            onEndReached={loadMorePosts}
+            onEndReachedThreshold={0.5}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor="#1A1B35"
+              />
+            }
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={5}
+            windowSize={10}
+            contentContainerStyle={styles.flatListContent}
+            ListHeaderComponent={() => (
+              <View style={styles.hotDebateContainer}>
+                <View style={styles.debateCardContainer}>
+                  {/* Top row with tags */}
+                  <View style={styles.debateCardTopRow}>
+                    <View style={styles.debateCardBadge}>
+                      <Text style={styles.debateCardBadgeText}>HOT DEBATE</Text>
                     </View>
-                    
-                    <Text 
-                      style={styles.pollTitle} 
-                      numberOfLines={1} 
-                      ellipsizeMode="tail"
-                    >
-                      {pollData.title}
-                    </Text>
-                    
-                    <View style={styles.pollImageContainer}>
-                      <Image 
-                        source={{ uri: 'https://source.unsplash.com/random/600x400/?cricket,kohli,dhoni' }}
-                        style={styles.pollImage}
-                        resizeMode="cover"
-                      />
-                      <View style={styles.pollImageOverlay} />
-                      <Text style={styles.pollImageText}>Who's the Cricket GOAT?</Text>
+                    <View style={styles.liveCountBadge}>
+                      <View style={styles.liveIndicator} />
+                      <Text style={styles.liveCountText}>1.2K LIVE</Text>
                     </View>
-                    
-                    <View style={styles.pollOptionsContainer}>
-                      {pollData.options.map((item, optionIndex) => (
-                        <TouchableOpacity 
-                          key={`poll-option-${item.id}-${optionIndex}`}
-                          style={styles.pollOption} 
-                          activeOpacity={0.7}
-                          onPress={handlePollClick}
-                        >
-                          <View style={styles.pollOptionContent}>
-                            <Text style={styles.pollOptionName}>{item.name}</Text>
-                            <View style={styles.pollVotes}>
-                              <Text style={styles.pollVotesText}>{item.votes}</Text>
-                            </View>
-                          </View>
-                        </TouchableOpacity>
-                      ))}
+                  </View>
+                  
+                  {/* Title section */}
+                  <Text style={styles.debateCardTitle}>
+                    Cricket GOAT Debate: Virat Kohli vs MS Dhoni
+                  </Text>
+                  
+                  {/* Image with timer overlay */}
+                  <View style={styles.imageContainer}>
+                    <Image 
+                      source={{uri: 'https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'}} 
+                      style={styles.debateImage}
+                      resizeMode="cover"
+                      defaultSource={require('../assets/icons/placeholder.png')}
+                    />
+                    <View style={styles.timerContainer}>
+                      <LinearGradient
+                        colors={['rgba(0,0,0,0.8)', 'rgba(0,0,0,0.6)']}
+                        style={styles.timerGradient}
+                      >
+                        <MaterialIcons name="timer" size={14} color="#FFFFFF" />
+                        <Text style={styles.timerText}>Closes in {formatCountdown()}</Text>
+                      </LinearGradient>
                     </View>
-                    
-                    <TouchableOpacity 
-                      style={styles.joinButtonContainer}
-                      activeOpacity={0.7}
-                      onPress={handlePollClick}
-                    >
-                      <Text style={styles.joinButtonText}>Join Dynamic Group</Text>
+                  </View>
+                  
+                  {/* Vote cards row */}
+                  <View style={styles.voteCardsContainer}>
+                    <TouchableOpacity style={styles.voteCard} onPress={() => console.log('Voted for Kohli')}>
+                      <View style={styles.voteCardTop}>
+                        <Image 
+                          source={{uri: 'https://randomuser.me/api/portraits/men/32.jpg'}} 
+                          style={styles.playerAvatar}
+                          defaultSource={require('../assets/icons/profile.png')}
+                        />
+                        <Text style={styles.playerName}>Virat Kohli</Text>
+                      </View>
+                      <View style={styles.voteProgressContainer}>
+                        <LinearGradient
+                          colors={['#00B0FF', '#2979FF']}
+                          start={{x: 0, y: 0}}
+                          end={{x: 1, y: 0}}
+                          style={[styles.voteProgressBar, {width: '52%'}]}
+                        />
+                      </View>
+                      <Text style={styles.votePercentage}>52% · 48.2K votes</Text>
                     </TouchableOpacity>
                     
-                      <Text style={styles.pollParticipants}>{pollData.participants}</Text>
+                    <TouchableOpacity style={styles.voteCard} onPress={() => console.log('Voted for Dhoni')}>
+                      <View style={styles.voteCardTop}>
+                        <Image 
+                          source={{uri: 'https://randomuser.me/api/portraits/men/45.jpg'}} 
+                          style={styles.playerAvatar}
+                          defaultSource={require('../assets/icons/profile.png')}
+                        />
+                        <Text style={styles.playerName}>MS Dhoni</Text>
+                      </View>
+                      <View style={styles.voteProgressContainer}>
+                        <LinearGradient
+                          colors={['#FF4081', '#F50057']}
+                          start={{x: 0, y: 0}}
+                          end={{x: 1, y: 0}}
+                          style={[styles.voteProgressBar, {width: '48%'}]}
+                        />
+                      </View>
+                      <Text style={styles.votePercentage}>48% · 45.8K votes</Text>
                     </TouchableOpacity>
                   </View>
-                </>
-              )}
-              ListFooterComponent={() => (
-                loading ? (
-                  <View style={styles.loaderContainer}>
-                    <ActivityIndicator size="large" color="#1A1B35" />
+                  
+                  {/* Engagement row */}
+                  <View style={styles.engagementRow}>
+                    <View style={styles.debateStats}>
+                      <TouchableOpacity style={styles.statButton}>
+                        <MaterialIcons name="favorite-border" size={24} color="#FFFFFF" />
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.statButton}>
+                        <MaterialIcons name="chat-bubble-outline" size={22} color="#FFFFFF" />
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.statButton}>
+                        <MaterialIcons name="share" size={22} color="#FFFFFF" />
+                      </TouchableOpacity>
+                    </View>
+                    <TouchableOpacity style={styles.joinButton} onPress={handlePollClick}>
+                      <LinearGradient
+                        colors={['#FF6D00', '#FF3D00']}
+                        start={{x: 0, y: 0}}
+                        end={{x: 1, y: 0}}
+                        style={styles.joinButtonGradient}
+                      >
+                        <Text style={styles.joinButtonText}>Join Debate</Text>
+                      </LinearGradient>
+                    </TouchableOpacity>
                   </View>
-                ) : null
-              )}
+                  
+                  {/* Stats row */}
+                  <View style={styles.statsRow}>
+                    <Text style={styles.statsText}>15.7K participants • 2.1K comments</Text>
+                    <Text style={styles.timeText}>2h ago</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+            ListFooterComponent={() => (
+              loading ? (
+                <View style={styles.loaderContainer}>
+                  <ActivityIndicator size="large" color="#1A1B35" />
+                </View>
+              ) : null
+            )}
           />
-        );
+        )}
         
-      case 'about':
-        return (
+        {/* Render "About" tab with ScrollView */}
+        {activeTab === 'about' && (
           <ScrollView 
             showsVerticalScrollIndicator={false} 
             contentContainerStyle={styles.scrollContentContainer}
@@ -466,9 +652,9 @@ const GroupScreen = ({ route }: { route: { params?: RouteParams } }) => {
                 source={{ uri: groupDetails.coverImage }} 
                 style={styles.coverImage} 
                 resizeMode="cover" 
-            />
-          </View>
-        
+              />
+            </View>
+          
             <View style={styles.aboutSection}>
               <Text style={styles.aboutSectionTitle}>Description</Text>
               <Text style={styles.aboutDescription}>{groupDetails.description}</Text>
@@ -507,10 +693,10 @@ const GroupScreen = ({ route }: { route: { params?: RouteParams } }) => {
               </View>
             </View>
           </ScrollView>
-        );
+        )}
         
-      case 'members':
-        return (
+        {/* Render "Members" tab with ScrollView */}
+        {activeTab === 'members' && (
           <ScrollView 
             showsVerticalScrollIndicator={false} 
             contentContainerStyle={styles.scrollContentContainer}
@@ -521,16 +707,16 @@ const GroupScreen = ({ route }: { route: { params?: RouteParams } }) => {
                 style={styles.coverImage} 
                 resizeMode="cover" 
               />
-          </View>
-        
+            </View>
+          
             <Text style={styles.membersCountText}>{groupDetails.members}</Text>
             {/* Members list would go here, similar structure to posts */}
             <Text style={styles.comingSoonText}>Member listing coming soon</Text>
           </ScrollView>
-        );
+        )}
         
-      case 'media':
-        return (
+        {/* Render "Media" tab with ScrollView */}
+        {activeTab === 'media' && (
           <ScrollView 
             showsVerticalScrollIndicator={false} 
             contentContainerStyle={styles.scrollContentContainer}
@@ -541,8 +727,8 @@ const GroupScreen = ({ route }: { route: { params?: RouteParams } }) => {
                 style={styles.coverImage} 
                 resizeMode="cover" 
               />
-          </View>
-        
+            </View>
+          
             <View style={styles.mediaGrid}>
               {posts
                 .filter(post => post.image)
@@ -553,64 +739,8 @@ const GroupScreen = ({ route }: { route: { params?: RouteParams } }) => {
                 ))
               }
             </View>
-      </ScrollView>
-        );
-        
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      
-      {/* Header */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Image 
-            source={require('../assets/icons/back.png')} 
-            style={styles.backIcon} 
-          />
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <View style={styles.titleRow}>
-            <Text style={styles.headerTitle}>{groupDetails.name}</Text>
-            <View style={styles.trendingContainer}>
-              <Text style={styles.headerSubtitle}>{groupDetails.trending}</Text>
-            </View>
-          </View>
-          <Text style={styles.groupStats}>{groupDetails.members} • {groupDetails.posts}</Text>
-        </View>
-        <TouchableOpacity style={styles.menuButton}>
-          <Image 
-            source={require('../assets/icons/more.png')} 
-            style={styles.menuButtonIcon} 
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabsContainer}>
-        {tabs.map((tab) => (
-          <TouchableOpacity 
-            key={`tab-${tab}`}
-            style={[styles.tab, activeTab === tab && styles.activeTab]} 
-            onPress={() => setActiveTab(tab)}
-          >
-            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </Text>
-            {activeTab === tab && (
-              <View style={styles.tabIndicator} />
-            )}
-          </TouchableOpacity>
-        ))}
-      </View>
-      
-      {/* Tab content container */}
-      <View style={styles.tabContentWrapper}>
-        {renderTabContent()}
+          </ScrollView>
+        )}
       </View>
       
       {/* Bottom Navigation is provided by the Tab.Navigator in AppNavigator */}
@@ -621,7 +751,7 @@ const GroupScreen = ({ route }: { route: { params?: RouteParams } }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9F9F9',
+    backgroundColor: '#F2F3F5',
   },
   headerContainer: {
     backgroundColor: '#1A1B35',
@@ -631,7 +761,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     height: Platform.OS === 'ios' ? 88 : 70 + (StatusBar.currentHeight || 0),
-    zIndex: 1,
   },
   backButton: {
     width: 32,
@@ -685,17 +814,14 @@ const styles = StyleSheet.create({
     height: 20,
     tintColor: 'white',
   },
+  scrollContainer: {
+    flex: 1,
+  },
   tabsContainer: {
     flexDirection: 'row',
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    zIndex: 10,
   },
   tab: {
     flex: 1,
@@ -707,8 +833,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 215, 0, 0.05)',
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#666',
+    fontWeight: '500',
   },
   activeTabText: {
     color: colors.primary,
@@ -722,9 +849,8 @@ const styles = StyleSheet.create({
     height: 3,
     backgroundColor: colors.primary,
   },
-  tabContentWrapper: {
+  mainContent: {
     flex: 1,
-    paddingTop: 0,
   },
   coverContainer: {
     width: '100%',
@@ -737,186 +863,44 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  dynamicGroupContainer: {
-    padding: 0,
-    paddingHorizontal: 10,
-    marginTop: 5,
-    marginBottom: 10,
-  },
-  pollContainer: {
-    backgroundColor: '#2A2A72',
-    borderRadius: 16,
-    padding: 16,
-    paddingTop: 40,
-    alignItems: 'center',
-    position: 'relative',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  pollTitle: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    textAlign: 'center',
-    width: '100%',
-    paddingHorizontal: 15,
-  },
-  dynamicGroupTag: {
-    position: 'absolute',
-    top: 15,
-    right: 15,
-    backgroundColor: '#E53935',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    zIndex: 1,
-  },
-  dynamicGroupTagText: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  pollImageContainer: {
-    width: '100%',
-    height: 180,
-    backgroundColor: '#3D3D94',
-    marginBottom: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 12,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  pollImage: {
-    width: '100%',
-    height: '100%',
-  },
-  pollImageOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(26, 27, 53, 0.5)',
-  },
-  pollImageText: {
-    position: 'absolute',
-    color: 'white',
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
-  },
-  pollOptionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 20,
-  },
-  pollOption: {
-    backgroundColor: '#3D3D94',
-    borderRadius: 10,
-    padding: 14,
-    width: '48%',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  pollOptionContent: {
-    alignItems: 'center',
-  },
-  pollOptionName: {
-    color: 'white',
-    fontSize: 15,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  pollVotes: {
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  pollVotesText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  joinButtonContainer: {
-    backgroundColor: '#E53935',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 15,
-  },
-  joinButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  pollParticipants: {
-    color: '#A5A5F3',
-    fontSize: 13,
-    textAlign: 'center',
-  },
-  createPostContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(20,20,20,0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-    marginHorizontal: 'auto',
-  },
-  createPostImage: {
-    width: 26,
-    height: 26,
-    resizeMode: 'contain',
-    tintColor: 'white',
-  },
   postContainer: {
     backgroundColor: 'white',
-    marginBottom: 8,
-    marginHorizontal: 10,
+    marginBottom: 12,
+    marginHorizontal: 0,
+    width: width,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EFEFEF',
   },
   postHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
+    padding: 10,
   },
   postHeaderLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   postHeaderInfo: {
-    marginLeft: 10,
+    marginLeft: 8,
   },
   postAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
   },
   postAuthorRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   postAuthorName: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#262626',
     marginRight: 4,
@@ -935,7 +919,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   postTime: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#8E8E8E',
   },
   postMoreButton: {
@@ -949,22 +933,39 @@ const styles = StyleSheet.create({
     height: 16,
     tintColor: '#262626',
   },
-  postImage: {
-    width: '100%',
+  postImageContainer: {
+    width: width,
     height: width,
+    backgroundColor: '#FAFAFA',
+    position: 'relative',
+  },
+  imageLoading: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(250, 250, 250, 0.7)',
+  },
+  postImage: {
+    width: width,
+    height: width,
+    backgroundColor: '#FAFAFA',
   },
   postActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   postActionsLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   postAction: {
-    marginRight: 16,
+    marginRight: 14,
   },
   actionIcon: {
     width: 24,
@@ -973,10 +974,10 @@ const styles = StyleSheet.create({
   },
   postEngagement: {
     paddingHorizontal: 12,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   likesText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#262626',
   },
@@ -985,7 +986,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   captionText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#262626',
     lineHeight: 18,
   },
@@ -994,17 +995,16 @@ const styles = StyleSheet.create({
   },
   commentsButton: {
     paddingHorizontal: 12,
-    paddingBottom: 12,
+    paddingBottom: 10,
   },
   commentsText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#8E8E8E',
   },
   loaderContainer: {
     paddingVertical: 20,
     alignItems: 'center',
   },
-  // About Tab Styles
   aboutSection: {
     backgroundColor: 'white',
     padding: 16,
@@ -1080,7 +1080,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#333',
   },
-  // Members Tab Styles
   membersCountText: {
     fontSize: 16,
     fontWeight: 'bold',
@@ -1094,7 +1093,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     padding: 30,
   },
-  // Media Tab Styles
   mediaGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1112,6 +1110,242 @@ const styles = StyleSheet.create({
   },
   scrollContentContainer: {
     paddingBottom: 30,
+  },
+  hotDebateContainer: {
+    width: width,
+    marginBottom: 16,
+    backgroundColor: '#303F9F',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  debateCardContainer: {
+    width: width,
+    backgroundColor: '#3F51B5',
+    paddingBottom: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: '#5C6BC0',
+    borderRadius: 0,
+    overflow: 'hidden',
+  },
+  debateCardTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
+    backgroundColor: '#3F51B5',
+  },
+  debateCardBadge: {
+    backgroundColor: '#FFC107',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+  },
+  debateCardBadgeText: {
+    color: '#212121',
+    fontWeight: 'bold',
+    fontSize: 11,
+    letterSpacing: 0.3,
+  },
+  liveCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  liveIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#F44336',
+    marginRight: 4,
+  },
+  liveCountText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  debateCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+  },
+  imageContainer: {
+    width: width,
+    height: 240,
+    position: 'relative',
+    borderTopWidth: 0,
+    borderBottomWidth: 0,
+    borderColor: '#EFEFEF',
+    backgroundColor: '#000',
+  },
+  debateImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+    opacity: 0.9,
+  },
+  timerContainer: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  timerGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    width: '100%',
+    height: '100%',
+  },
+  timerText: {
+    color: 'white',
+    fontSize: 11,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  vsOverlay: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: 40,
+    height: 40,
+    marginLeft: -20,
+    marginTop: -20,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  vsText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1A1B35',
+  },
+  voteCardsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#3F51B5',
+  },
+  voteCard: {
+    width: '48%',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 6,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  voteCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  playerAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginRight: 8,
+  },
+  playerName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  voteProgressContainer: {
+    width: '100%',
+    height: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: 4,
+    marginBottom: 6,
+    overflow: 'hidden',
+  },
+  voteProgressBar: {
+    height: '100%',
+    borderRadius: 5,
+  },
+  votePercentage: {
+    fontSize: 11,
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  engagementRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#5C6BC0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#5C6BC0',
+    backgroundColor: '#3F51B5',
+  },
+  debateStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statButton: {
+    marginRight: 16,
+  },
+  joinButton: {
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  joinButtonGradient: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  joinButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    backgroundColor: '#3F51B5',
+  },
+  statsText: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  timeText: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.6)',
+  },
+  evenPost: {
+    backgroundColor: '#FCFCFC',
+  },
+  flatListContent: {
+    paddingBottom: 20,
+    paddingTop: 0,
+  },
+  postsContainer: {
+    flex: 1,
+  },
+  mainContainer: {
+    flex: 1,
   },
 });
 
