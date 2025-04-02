@@ -7,23 +7,25 @@ import {
   ViewToken,
   TouchableOpacity,
   Image,
-  Text
+  Text,
+  Platform
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import ReelItem from '../components/ReelItem';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 // Import local icons
 const searchIcon = require('../assets/icons/search.png');
 const podiumIcon = require('../assets/icons/podium.png');
-const notificationIcon = require('../assets/icons/notifications.png');
 
-// Sample data
+// Sample data with demo video URLs
+// These videos will be cached when they load for faster subsequent viewing
 const SAMPLE_REELS = [
   {
     id: '1',
-    videoUri: 'https://assets.mixkit.co/videos/preview/mixkit-woman-dancing-under-neon-lights-1230-large.mp4',
+    videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
     user: {
       id: 'user1',
       username: 'dancequeen',
@@ -38,7 +40,7 @@ const SAMPLE_REELS = [
   },
   {
     id: '2',
-    videoUri: 'https://assets.mixkit.co/videos/preview/mixkit-young-mother-with-her-little-daughter-decorating-a-christmas-tree-39745-large.mp4',
+    videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
     user: {
       id: 'user2',
       username: 'familytime',
@@ -53,7 +55,7 @@ const SAMPLE_REELS = [
   },
   {
     id: '3',
-    videoUri: 'https://assets.mixkit.co/videos/preview/mixkit-portrait-of-a-fashion-woman-with-silver-makeup-39875-large.mp4',
+    videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
     user: {
       id: 'user3',
       username: 'glammakeup',
@@ -68,7 +70,7 @@ const SAMPLE_REELS = [
   },
   {
     id: '4',
-    videoUri: 'https://assets.mixkit.co/videos/preview/mixkit-man-under-multicolored-lights-1237-large.mp4',
+    videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
     user: {
       id: 'user4',
       username: 'urbanvibes',
@@ -83,7 +85,7 @@ const SAMPLE_REELS = [
   },
   {
     id: '5',
-    videoUri: 'https://assets.mixkit.co/videos/preview/mixkit-girl-with-neon-lights-1232-large.mp4',
+    videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
     user: {
       id: 'user5',
       username: 'neonwave',
@@ -96,6 +98,81 @@ const SAMPLE_REELS = [
     shares: 412,
     music: 'Retrowave - Neon Dreams',
   },
+  {
+    id: '6',
+    videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+    user: {
+      id: 'user6',
+      username: 'streetlife',
+      profilePic: 'https://randomuser.me/api/portraits/men/42.jpg',
+      isVerified: true,
+    },
+    description: 'Street photography tour downtown 📸 #photography #urban #streetlife',
+    likes: 32700,
+    comments: 456,
+    shares: 213,
+    music: 'City Lights - Electronic Dreams',
+  },
+  {
+    id: '7',
+    videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
+    user: {
+      id: 'user7',
+      username: 'travel_addict',
+      profilePic: 'https://randomuser.me/api/portraits/women/58.jpg',
+      isVerified: false,
+    },
+    description: 'Morning hike in the mountains 🏔️ #travel #adventure #nature',
+    likes: 54200,
+    comments: 623,
+    shares: 312,
+    music: 'Adventure - John Smith',
+  },
+  {
+    id: '8',
+    videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4',
+    user: {
+      id: 'user8',
+      username: 'fitness_guru',
+      profilePic: 'https://randomuser.me/api/portraits/men/22.jpg',
+      isVerified: true,
+    },
+    description: 'Quick 5-minute home workout 💪 #fitness #workout #motivation',
+    likes: 89100,
+    comments: 1423,
+    shares: 732,
+    music: 'Pump It Up - Workout Mix',
+  },
+  {
+    id: '9',
+    videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+    user: {
+      id: 'user9',
+      username: 'food_lover',
+      profilePic: 'https://randomuser.me/api/portraits/women/33.jpg',
+      isVerified: false,
+    },
+    description: 'Easy 15-minute pasta recipe 🍝 #cooking #food #recipe',
+    likes: 76300,
+    comments: 982,
+    shares: 543,
+    music: 'Kitchen Vibes - Cooking Songs',
+  },
+  {
+    id: '10',
+    videoUri: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
+    user: {
+      id: 'user10',
+      username: 'pet_paradise',
+      profilePic: 'https://randomuser.me/api/portraits/women/91.jpg',
+      isVerified: true,
+    },
+    description: 'My dog learning a new trick 🐕 #pets #dogs #cute',
+    likes: 123400,
+    comments: 2341,
+    shares: 987,
+    music: 'Happy Days - Pet Lovers',
+  }
 ];
 
 // Header component
@@ -148,18 +225,18 @@ const HomeHeader = () => {
       <View style={styles.actionsContainer}>
         <TouchableOpacity 
           style={styles.actionButton}
-          onPress={handlePodiumPress}
-        >
-          <Image source={podiumIcon} style={styles.actionIcon} />
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.actionButton}
           onPress={handleNotificationPress}
         >
           <View style={styles.notificationIconContainer}>
-            <Image source={notificationIcon} style={styles.actionIcon} />
+            <MaterialIcons name="notifications" size={24} color="white" />
             <View style={styles.notificationBadge} />
           </View>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.actionButton}
+          onPress={handlePodiumPress}
+        >
+          <Image source={podiumIcon} style={styles.actionIcon} />
         </TouchableOpacity>
         <TouchableOpacity 
           style={styles.actionButton}
@@ -174,6 +251,7 @@ const HomeHeader = () => {
 
 const HomeScreen = () => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [loadingError, setLoadingError] = useState(false);
   
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
     if (viewableItems.length > 0) {
@@ -185,36 +263,46 @@ const HomeScreen = () => {
     itemVisiblePercentThreshold: 80
   };
   
+  const handleItemError = (itemId: string) => {
+    console.log(`Video error for item ${itemId}`);
+    setLoadingError(true);
+  };
+  
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <HomeHeader />
-      </View>
       <FlatList
         data={SAMPLE_REELS}
         renderItem={({ item, index }) => (
           <ReelItem 
             item={item} 
             isActive={index === activeIndex}
+            onError={() => handleItemError(item.id)}
           />
         )}
         keyExtractor={item => item.id}
         pagingEnabled
         snapToAlignment="start"
-        decelerationRate={0.7}
+        decelerationRate={0.9}
         viewabilityConfig={viewabilityConfig}
         onViewableItemsChanged={onViewableItemsChanged}
         showsVerticalScrollIndicator={false}
-        snapToInterval={Dimensions.get('window').height - 60}
+        snapToInterval={Dimensions.get('window').height}
         scrollEventThrottle={16}
-        maxToRenderPerBatch={2}
-        windowSize={5}
-        initialNumToRender={2}
-        removeClippedSubviews={false}
+        maxToRenderPerBatch={1}
+        windowSize={3}
+        initialNumToRender={1}
+        removeClippedSubviews={true}
         bounces={false}
         bouncesZoom={false}
-        contentContainerStyle={{ paddingTop: 80 }}
+        maintainVisibleContentPosition={{
+          minIndexForVisible: 0,
+        }}
       />
+      
+      {/* Header overlay */}
+      <View style={styles.headerContainer}>
+        <HomeHeader />
+      </View>
     </View>
   );
 };
@@ -236,11 +324,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 40,
-    paddingBottom: 6,
-    height: 82,
+    paddingTop: Platform.OS === 'ios' ? 60 : 45,
+    paddingBottom: 10,
+    height: Platform.OS === 'ios' ? 100 : 90,
     width: '100%',
-    backgroundColor: 'rgba(0,0,0,0.9)',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 10,
+    backgroundColor: 'rgba(0,0,0,0)',
   },
   tabsContainer: {
     flexDirection: 'row',

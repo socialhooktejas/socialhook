@@ -290,17 +290,15 @@ const AppNavigator = () => {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: 'black',
+    position: 'absolute',
+    backgroundColor: '#000000',
     borderTopWidth: 0.5,
     borderTopColor: 'rgba(255,255,255,0.2)',
-    elevation: 8,
-    height: 60,
-    paddingTop: 12,
-    paddingBottom: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
+    elevation: 0,
+    height: 50,
+    paddingTop: 8,
+    paddingBottom: 4,
+    shadowColor: 'transparent',
   },
   iconContainer: {
     alignItems: 'center',

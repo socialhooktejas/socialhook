@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -29,7 +29,7 @@ const musicIcon = { uri: 'https://img.icons8.com/ios/50/ffffff/musical-notes.png
 export interface ReelItemProps {
   item: {
     id: string;
-    videoUri: string;
+    videoUri: any;
     user: {
       id: string;
       username: string;
@@ -43,9 +43,10 @@ export interface ReelItemProps {
     music: string;
   };
   isActive: boolean;
+  onError?: (id: string) => void;
 }
 
-const ReelItem: React.FC<ReelItemProps> = ({ item, isActive }) => {
+const ReelItem: React.FC<ReelItemProps> = ({ item, isActive, onError }) => {
   const navigation = useNavigation();
   
   // Use any type for video ref since TypeScript definitions might be missing
@@ -53,6 +54,8 @@ const ReelItem: React.FC<ReelItemProps> = ({ item, isActive }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [liked, setLiked] = useState(false);
   const [lastTap, setLastTap] = useState<number | null>(null);
+  const [videoError, setVideoError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   
   // Animation for like button press
   const likeScale = useRef(new Animated.Value(1)).current;
@@ -60,6 +63,54 @@ const ReelItem: React.FC<ReelItemProps> = ({ item, isActive }) => {
   // Animation for double tap heart
   const heartSize = useRef(new Animated.Value(0)).current;
   const heartOpacity = useRef(new Animated.Value(0)).current;
+  
+  // Reset video state and handle errors when active item changes
+  useEffect(() => {
+    // When this item becomes active
+    if (isActive) {
+      // Reset error state
+      setVideoError(false);
+      
+      // If there was an error and we haven't exceeded retry limit
+      if (videoError && retryCount < 3) {
+        // Wait a bit and try again
+        setTimeout(() => {
+          setIsPaused(false);
+          setRetryCount(prev => prev + 1);
+        }, 1000);
+      } else if (isActive) {
+        // Add a small delay before playing to ensure proper initialization
+        setIsPaused(true);
+        setTimeout(() => {
+          setIsPaused(false);
+        }, 300);
+      }
+    } else {
+      // Reset retry count when item becomes inactive
+      setRetryCount(0);
+      setVideoError(false);
+    }
+  }, [isActive, videoError, retryCount]);
+  
+  // Cleanup effect for video
+  useEffect(() => {
+    return () => {
+      // Reset all states on unmount
+      if (videoRef.current) {
+        videoRef.current.seek(0);
+      }
+    };
+  }, []);
+
+  // Handle unmounting and remounting video component
+  useEffect(() => {
+    if (!isActive) {
+      // Cleanup when not active
+      setVideoError(false);
+      setRetryCount(0);
+      setIsPaused(true);
+    }
+  }, [isActive]);
   
   const handleVideoPress = useCallback(() => {
     // Handle double tap to like
@@ -146,6 +197,7 @@ const ReelItem: React.FC<ReelItemProps> = ({ item, isActive }) => {
     }
     
     // Navigate to CommentsScreen
+    // @ts-ignore
     navigation.navigate('CommentsScreen', {
       commentCount: item.comments,
       postOwnerUsername: item.user.username,
@@ -173,14 +225,59 @@ const ReelItem: React.FC<ReelItemProps> = ({ item, isActive }) => {
             source={{ uri: item.videoUri }}
             style={styles.video}
             resizeMode="cover"
-            repeat
+            repeat={true}
             paused={!isActive || isPaused}
-            playInBackground={false}
-            playWhenInactive={false}
+            muted={true}
             ignoreSilentSwitch="ignore"
+            bufferConfig={{
+              minBufferMs: 1000,
+              maxBufferMs: 5000,
+              bufferForPlaybackMs: 500,
+              bufferForPlaybackAfterRebufferMs: 1000
+            }}
+            reportBandwidth={true}
+            minLoadRetryCount={5}
+            maxBitRate={2000000}
+            onError={(error) => {
+              console.log('Video error:', item.id);
+              setVideoError(true);
+              // Call parent error handler if provided
+              if (onError) {
+                onError(item.id);
+              }
+            }}
+            onLoad={() => {
+              console.log('Video loaded:', item.id);
+              setVideoError(false);
+              if (isActive) {
+                setIsPaused(false);
+              }
+            }}
+            onBuffer={(data) => {
+              // Handle buffering state
+              console.log(`Buffer status for ${item.id}:`, data.isBuffering);
+            }}
           />
           
-          {isPaused && (
+          {videoError && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>Video Unavailable</Text>
+              <TouchableOpacity 
+                style={styles.retryButton} 
+                onPress={() => {
+                  setVideoError(false);
+                  setRetryCount(prev => prev + 1);
+                  if (videoRef.current) {
+                    videoRef.current.seek(0);
+                  }
+                }}
+              >
+                <Text style={styles.retryText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          
+          {isPaused && !videoError && (
             <View style={styles.pauseIconContainer}>
               <Image source={playIcon} style={styles.playIcon} />
             </View>
@@ -278,7 +375,7 @@ const ReelItem: React.FC<ReelItemProps> = ({ item, isActive }) => {
 const styles = StyleSheet.create({
   container: {
     width,
-    height: height - 60, 
+    height: height,
     backgroundColor: '#000',
     position: 'relative',
   },
@@ -329,23 +426,23 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-end',
     padding: spacing.medium,
-    paddingBottom: 40,
+    paddingBottom: 52,
   },
   bottomSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    marginBottom: 15,
+    marginBottom: 0,
   },
   bottomLeftSection: {
     flex: 1,
     marginRight: spacing.medium,
-    marginBottom: 10,
+    marginBottom: 0,
   },
   userInfoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.large,
+    marginBottom: 7,
   },
   profilePic: {
     width: 40,
@@ -366,7 +463,7 @@ const styles = StyleSheet.create({
   },
   description: {
     color: 'white',
-    marginBottom: spacing.medium,
+    marginBottom: 7,
     fontSize: typography.fontSize.regular,
   },
   musicContainer: {
@@ -392,18 +489,18 @@ const styles = StyleSheet.create({
   actionsContainer: {
     alignItems: 'center',
     width: 65,
-    marginBottom: 15,
+    marginBottom: 10,
     marginRight: -5,
     marginTop: -5,
   },
   actionButton: {
     alignItems: 'center',
-    marginBottom: spacing.large,
+    marginBottom: 14,
   },
   actionIconImage: {
     width: 30,
     height: 30,
-    marginBottom: spacing.small,
+    marginBottom: 5,
     tintColor: 'white',
   },
   actionIcon: {
@@ -451,6 +548,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     overflow: 'hidden',
+  },
+  errorText: {
+    color: 'white',
+    fontSize: typography.fontSize.small,
+    marginTop: 10,
+  },
+  videoPlaceholder: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  retryButton: {
+    backgroundColor: colors.primary,
+    padding: spacing.medium,
+    borderRadius: 10,
+  },
+  retryText: {
+    color: 'white',
+    fontSize: typography.fontSize.medium,
+    fontWeight: 'bold',
   },
 });
 
